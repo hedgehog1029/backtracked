@@ -4,6 +4,8 @@ import aiohttp
 from . import constants
 from .engine.packets import Packet, PacketType
 
+import json
+
 # TODO: Proper configurable logging rather than print
 class SocketClient:
     def __init__(self, client):
@@ -97,3 +99,11 @@ class DubtrackMessage:
 
     def __getitem__(self, item):
         return self.data.get(item, None)
+
+class RoomActionMessage:
+    def __init__(self, message: dict):
+        self.name = message.get("name")
+        self.type = message.get("type")
+
+        if self.type == "json":
+            self.value = json.loads(message.get("data"))

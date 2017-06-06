@@ -1,6 +1,6 @@
 from .http import HTTPClient
 from .constants import Endpoints, Actions, Events
-from .socket import SocketClient, DubtrackMessage
+from .socket import SocketClient, DubtrackMessage, RoomActionMessage
 from ..models import AuthenticatedUser, Room, RoomCollection
 import asyncio
 
@@ -133,4 +133,8 @@ class Client:
             if room is not None:
                 self._dispatch(Events.on_joined_room, room)
         elif payload.action == Actions.roomAction:
-            pass
+            room = self.rooms.from_room_id(payload.channel)
+            msg = RoomActionMessage(payload.message)
+
+    def _handle_room_action(self, room: Room, msg: RoomActionMessage):
+        pass

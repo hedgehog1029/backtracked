@@ -35,8 +35,8 @@ class Room(Model):
         self.room_id = "room:" + self.id
 
     async def change_presence(self, presence: Presence):
-        await self.client._socket.send(action=Actions.presenceChange, channel=self.room_id, presence=
-                                       PresenceChange(presence, self.client.user.id, self.client._connection_id))
+        await self.client.socket.send(action=Actions.presenceChange, channel=self.room_id, presence=
+                                      PresenceChange(presence, self.client.user.id, self.client.connection_id))
 
     async def send_message(self, text: str):
         await self.client.http.post(Endpoints.chat(rid=self.id), data={
@@ -60,8 +60,9 @@ class RoomCollection(Collection):
     def from_rtc(self, rtc):
         return utils.get(self.values(), rtc=rtc)
 
-    def from_room_id(self, room_id):
-        return utils.get(self.values(), room_id=room_id)
+    def from_room_id(self, room_id: str):
+        _, rid = room_id.split(":")
+        return self.get(rid, None)
 
 class PresenceChange:
     def __init__(self, presence: Presence, client_id: str, connection_id: str):
