@@ -3,8 +3,6 @@ import asyncio
 from .. import __version__
 from . import constants
 
-from aiosocks.connector import ProxyClientRequest
-
 # TODO: Ratelimiting, once the dubtrack API makes sense
 class HTTPClient:
     def __init__(self, loop: asyncio.AbstractEventLoop, connector=None):

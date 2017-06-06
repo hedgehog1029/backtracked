@@ -32,31 +32,38 @@ class Packet:
         else:
             self.data = None
 
-    def to_json(self):
+    def to_dict(self):
         return json.loads(self.data)
 
     def encode(self) -> bytes:
-        type = six.int2byte(self.type.value)
+        type = bytes(str(self.type.value), encoding=self.default_encoding)
 
         if self.data is not None:
-            data = bytes(self.data, encoding=self.default_encoding)
+            return type + self.data
+        else:
+            return type
 
+    def encode_str(self):
+        type = str(self.type.value)
+
+        if self.data is not None:
+            data = self.data.decode(self.default_encoding)
             return type + data
         else:
             return type
 
     @classmethod
-    def decode(cls, packet: bytes):
+    def decode(cls, packet: str):
         packet = bytes(packet, encoding=cls.default_encoding)
         packet_type = six.byte2int(packet[:1])
 
-        if packet_type == 98: # b64 flag
+        if packet_type == 98:  # b64 flag
             part = packet[1:]
             dec_type = PacketType(six.byte2int(part[:1]))
             decoded = base64.b64decode(part[1:])
 
             return cls(dec_type, decoded)
-        packet_type -= 48 # string encoded numbers bois
+        packet_type -= 48  # string encoded numbers bois
 
         dec_type = PacketType(packet_type)
         if len(packet) > 1:
