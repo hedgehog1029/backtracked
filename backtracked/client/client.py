@@ -115,6 +115,8 @@ class Client:
         room = Room(self, room_raw)
         self.rooms.add(room)
 
+        await self.http.post(Endpoints.room_users(rid=room.id))
+
         await self.socket.send(action=Actions.join_room, channel=room.room_id)
         return room
 
@@ -145,6 +147,12 @@ class Client:
             message = Message(self, msg.value.data)
 
             self._dispatch(Events.on_chat, message)
+        elif msg.name == RoomActions.chat_skip:
+            pass
+        elif msg.name == RoomActions.chat_delete:
+            pass
+        elif msg.name == RoomActions.room_playlist_dub:
+            pass
         elif msg.name == RoomActions.user_join:
             user = User(self, msg.value.user)
             self.users.add(user)

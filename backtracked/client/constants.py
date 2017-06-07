@@ -18,6 +18,7 @@ class Endpoints:
     chat = fmt("/chat/{rid}")
     chat_ban = fmt("/chat/ban/{rid}/user/{uid}")
     room_join = fmt("/room/{slug}")
+    room_users = fmt("/room/{rid}/users")
 
 class Actions(Enum):
     heartbeat = 0
