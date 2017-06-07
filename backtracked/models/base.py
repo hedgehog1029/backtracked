@@ -8,14 +8,21 @@ class Model:
     def from_data(cls, client, data: dict):
         cls(client, data)
 
+    def __getitem__(self, item):
+        return getattr(self, item, None)
+
 class BaseCollection:
     def add(self, obj):
-        if hasattr(obj, "id"):
-            self[obj.id] = obj
+        pass
 
 class Collection(dict, BaseCollection):
     def __init__(self):
         super().__init__()
+
+    def add(self, obj):
+        if hasattr(obj, "id"):
+            self[obj.id] = obj
+
 
 class OrderedCollection(OrderedDict):
     def __init__(self):

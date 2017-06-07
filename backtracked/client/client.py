@@ -1,7 +1,7 @@
 from .http import HTTPClient
-from .constants import Endpoints, Actions, Events
+from .constants import Endpoints, Actions, Events, RoomActions
 from .socket import SocketClient, DubtrackMessage, RoomActionMessage
-from ..models import AuthenticatedUser, Room, RoomCollection
+from ..models import *
 import asyncio
 
 class Client:
@@ -15,7 +15,8 @@ class Client:
         :param kwargs: Optional options 
         """
         self.loop = asyncio.get_event_loop()
-        self.http = HTTPClient(self.loop, connector=kwargs.get("connector", None))
+        self.http = HTTPClient(self.loop, connector=kwargs.get("connector", None),
+                               proxy_options=kwargs.get("proxy_options", None))
         self.user = None
 
         self.socket = SocketClient(self)
@@ -25,22 +26,21 @@ class Client:
         self.event_handlers = {}
 
         self.rooms = RoomCollection()
+        self.users = Collection()
 
-    def event(self):
+    def event(self, coro):
         """
         Decorator used for registering event handlers.
         """
-        def wrapper(f):
-            if asyncio.iscoroutinefunction(f):
-                event_name = f.__name__
+        if asyncio.iscoroutinefunction(coro):
+            event_name = coro.__name__
 
-                if event_name not in self.event_handlers:
-                    self.event_handlers[event_name] = []
+            if event_name not in self.event_handlers:
+                self.event_handlers[event_name] = []
 
-                self.event_handlers[event_name].append(f)
-            else:
-                raise BaseException("Passed function wasn't a coroutine!")
-        return wrapper
+            self.event_handlers[event_name].append(coro)
+        else:
+            raise BaseException("Passed function wasn't a coroutine!")
 
     def _dispatch(self, ev_name, *payload):
         if ev_name not in self.event_handlers:
@@ -115,7 +115,7 @@ class Client:
         room = Room(self, room_raw)
         self.rooms.add(room)
 
-        await self.socket.send(action=Actions.joinRoom, channel=room.room_id)
+        await self.socket.send(action=Actions.join_room, channel=room.room_id)
         return room
 
     # INTERNAL HANDLING #
@@ -127,14 +127,27 @@ class Client:
             self.connection_id = payload.connectionId
 
             self._dispatch(Events.on_ready)
-        elif payload.action == Actions.joinedRoom:
+        elif payload.action == Actions.joined_room:
             room = self.rooms.from_room_id(payload.channel)
 
             if room is not None:
                 self._dispatch(Events.on_joined_room, room)
-        elif payload.action == Actions.roomAction:
+        elif payload.action == Actions.room_action:
             room = self.rooms.from_room_id(payload.channel)
             msg = RoomActionMessage(payload.message)
 
+            self._handle_room_action(room=room, msg=msg)
+
     def _handle_room_action(self, room: Room, msg: RoomActionMessage):
-        pass
+        if msg.name == RoomActions.chat_message:
+            user = User(self, msg.value.user)
+            self.users.add(user)
+            message = Message(self, msg.value.data)
+
+            self._dispatch(Events.on_chat, message)
+        elif msg.name == RoomActions.user_join:
+            user = User(self, msg.value.user)
+            self.users.add(user)
+            member = Member(self, msg.value.roomUser)
+
+            self._dispatch(Events.on_member_join, room, member)

@@ -35,7 +35,7 @@ class Room(Model):
         self.room_id = "room:" + self.id
 
     async def change_presence(self, presence: Presence):
-        await self.client.socket.send(action=Actions.presenceChange, channel=self.room_id, presence=
+        await self.client.socket.send(action=Actions.presence_change, channel=self.room_id, presence=
                                       PresenceChange(presence, self.client.user.id, self.client.connection_id))
 
     async def send_message(self, text: str):

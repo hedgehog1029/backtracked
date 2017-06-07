@@ -30,18 +30,40 @@ class Actions(Enum):
     close = 7
     closed = 8
     error = 9
-    joinRoom = 10
-    joinedRoom = 11
-    leaveRoom = 12
-    leftRoom = 13
-    presenceChange = 14
-    roomAction = 15
+    join_room = 10
+    joined_room = 11
+    leave_room = 12
+    left_room = 13
+    presence_change = 14
+    room_action = 15
+
+class RoomActions(Enum):
+    chat_message = "chat-message"
+    chat_skip = "chat-skip"
+    chat_delete = "delete-chat-message"
+    room_playlist_dub = "room_playlist-dub"
+    room_playlist_grab = "room_playlist-queue-update-grabs"
+    room_playlist_update_dubs = "room_playlist-queue-update-dub"
+    room_playlist_update = "room_playlist"
+    room_update = "room-update"
+    user_ban = "user-ban"
+    user_image_update = "user-update"
+    user_join = "user-join"
+    user_kick = "user-kick"
+    user_leave = "user-leave"
+    user_mute = "user-mute"
+    user_set_role = "user-setrole"
+    user_unban = "user-unban"
+    user_unmute = "user-unmute"
+    user_unset_role = "user-unsetrole"
+    user_update = "user_update"
 
 class Events:
     # main
     on_ready = "on_ready"
     on_joined_room = "on_joined_room"
     on_chat = "on_chat"
+    on_member_join = "on_member_join"
 
     # aliases
     on_message = on_chat

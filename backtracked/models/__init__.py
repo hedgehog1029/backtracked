@@ -1,2 +1,4 @@
-from .user import User, AuthenticatedUser
-from .room import Room, RoomCollection
+from .user import *
+from .message import *
+from .room import *
+from .base import Collection

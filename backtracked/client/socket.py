@@ -21,8 +21,13 @@ class SocketClient:
         self.timeout_timer = None
 
     async def connect(self, token: str):
+        opts = {}
+
+        if self._client.http.proxy_options.proxy is not None:
+            opts["proxy"] = self._client.http.proxy_options.proxy
+
         print("ws connect")
-        self.ws = await self.session.ws_connect(constants.ws_url(token))
+        self.ws = await self.session.ws_connect(constants.ws_url(token), **opts)
         print("connected")
 
         async for msg in self.ws:
@@ -89,10 +94,9 @@ class SocketClient:
         await self.ws.send_str(packet.encode_str())
         print("WS Send: {0.type.name} - {0.data}".format(packet))
 
-class DubtrackMessage:
-    def __init__(self, payload: dict):
-        self.action = constants.Actions(payload.get("action"))
-        self.data = payload
+class AttributeProxy:
+    def __init__(self, data: dict):
+        self.data = data
 
     def __getattr__(self, name: str):
         return self.data.get(name, None)
@@ -100,10 +104,15 @@ class DubtrackMessage:
     def __getitem__(self, item):
         return self.data.get(item, None)
 
+class DubtrackMessage(AttributeProxy):
+    def __init__(self, payload: dict):
+        super().__init__(payload)
+        self.action = constants.Actions(payload.get("action"))
+
 class RoomActionMessage:
     def __init__(self, message: dict):
-        self.name = message.get("name")
+        self.name = constants.RoomActions(message.get("name"))
         self.type = message.get("type")
 
         if self.type == "json":
-            self.value = json.loads(message.get("data"))
+            self.value = AttributeProxy(json.loads(message.get("data")))
