@@ -23,7 +23,10 @@ class Collection(dict, BaseCollection):
         if hasattr(obj, "id"):
             self[obj.id] = obj
 
-
-class OrderedCollection(OrderedDict):
+class OrderedCollection(OrderedDict, BaseCollection):
     def __init__(self):
         super().__init__()
+
+    def add(self, obj):
+        if hasattr(obj, "id"):
+            self[obj.id] = obj

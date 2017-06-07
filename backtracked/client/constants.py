@@ -64,6 +64,8 @@ class Events:
     on_ready = "on_ready"
     on_joined_room = "on_joined_room"
     on_chat = "on_chat"
+    on_chat_skip = "on_chat_skip"
+    on_chat_delete = "on_chat_delete"
     on_member_join = "on_member_join"
 
     # aliases

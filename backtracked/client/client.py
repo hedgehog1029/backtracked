@@ -27,6 +27,7 @@ class Client:
 
         self.rooms = RoomCollection()
         self.users = Collection()
+        self.messages = MessageCollection()
 
     def event(self, coro):
         """
@@ -134,6 +135,11 @@ class Client:
 
             if room is not None:
                 self._dispatch(Events.on_joined_room, room)
+        elif payload.action == Actions.presence_change:
+            user = self.users.get(payload.presence.get("clientId"))
+
+            if user is not None:
+                pass
         elif payload.action == Actions.room_action:
             room = self.rooms.from_room_id(payload.channel)
             msg = RoomActionMessage(payload.message)
@@ -145,12 +151,19 @@ class Client:
             user = User(self, msg.value.user)
             self.users.add(user)
             message = Message(self, msg.value.data)
+            self.messages.add(message)
 
             self._dispatch(Events.on_chat, message)
         elif msg.name == RoomActions.chat_skip:
             pass
         elif msg.name == RoomActions.chat_delete:
-            pass
+            user = User(self, msg.value.user)
+            self.users.add(user)
+            message = self.messages.get(msg.value.chatid)
+
+            if message is not None:
+                message.deleted = True
+                self._dispatch(Events.on_chat_delete, message)
         elif msg.name == RoomActions.room_playlist_dub:
             pass
         elif msg.name == RoomActions.user_join:
