@@ -62,10 +62,31 @@ class Room(Model):
         self.playlist = RoomPlaylist(current_song=data.get("currentSong"))
 
     async def change_presence(self, presence: Presence):
+        """
+        Change the logged-in user's presence in this room.
+        
+        Parameters
+        ----------
+        presence: :class:`Presence`
+            Presence enum representing the desired presence.
+        """
         await self.client.socket.send(action=Actions.presence_change, channel=self.room_id, presence=
                                       PresenceChange(presence, self.client.user.id, self.client.connection_id))
 
     async def send_message(self, text: str):
+        """
+        Sends a message to this room.
+        
+        Parameters
+        ----------
+        text: str
+            Text to send in the message.
+        
+        Returns
+        -------
+        :class:`Message`
+            The sent message.
+        """
         from . import Message
         _, raw = await self.client.http.post(Endpoints.chat(rid=self.id), data={
             "type": "chat-message",

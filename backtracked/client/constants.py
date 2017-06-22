@@ -85,6 +85,16 @@ class RoleGlobal:
 __all__ = ["Presence", "Role"]
 
 class Presence(Enum):
+    """
+    Represents a member's presence in a room.
+    
+    Attributes
+    ----------
+    enter:
+        "Visible" presence
+    exit:
+        "Invisible" presence
+    """
     enter = 0
     exit = 1
     update = 2
@@ -94,6 +104,22 @@ class Presence(Enum):
 
 # Possibly have a Rights enum
 class Role(Enum):
+    """
+    Represents a possible role that may be assigned to a member.
+    
+    Attributes
+    ----------
+    resident_dj:
+        Resident DJ role.
+    vip:
+        VIP role.
+    moderator:
+        Moderator role (can kick+ban)
+    manager:
+        Manager role
+    co_owner:
+        Co-Owner role
+    """
     resident_dj = RoleGlobal(id="5615feb8e596154fc2000002", type="resident-dj", label="Resident DJ", rights=["set-dj"])
     vip = RoleGlobal(id="5615fe1ee596154fc2000001", type="vip", label="VIP", rights=["skip", "set-dj"])
     moderator = RoleGlobal(id="52d1ce33c38a06510c000001", type="mod", label="Moderator", rights=["skip", "queue-order",

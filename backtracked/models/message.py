@@ -8,6 +8,17 @@ __all__ = ["Message", "MessageCollection"]
 class Message(Model):
     """
     Represents a sent message on Dubtrack.
+    
+    Attributes
+    ----------
+    id: str
+        Chat ID of this message.
+    content: str
+        Text of the message.
+    deleted: bool
+        True if the message has been deleted, False otherwise.
+    created_at: datetime.datetime
+        Datetime representing the time this message was sent.
     """
     def __init__(self, client, data: dict):
         super().__init__(client)
@@ -23,7 +34,11 @@ class Message(Model):
     def author(self) -> User:
         """
         Get the author of this message.
-        :return: User
+        
+        Returns
+        -------
+        :class:`User`
+            Author of this message
         """
         return self.client.users.get(self._userid)
 
@@ -31,7 +46,11 @@ class Message(Model):
     def room(self) -> Room:
         """
         Get the room this message was sent in.
-        :return: Room
+        
+        Returns
+        -------
+        :class:`Room`
+            Room this message was sent to.
         """
         return self.client.rooms.get(self._roomid)
 
@@ -39,7 +58,11 @@ class Message(Model):
     def member(self) -> Member:
         """
         Get the author of this message as a member of the room.
-        :return: Member
+        
+        Returns
+        -------
+        :class:`Member`
+            Member who sent this message.
         """
         return self.room.members.from_user_id(self._userid)
 

@@ -38,8 +38,16 @@ class User(Model):
         """
         Returns the :class:`Member` object of this user in the given :class:`Room`. May be None if the member hasn't
         yet been backfilled.
-        :param room: :class:`Room` of the sought-after member.
-        :return: :class:`Member`
+        
+        Parameters
+        ----------
+        room: :class:`Room`
+            Room of the sought-after member.
+        
+        Returns
+        -------
+        :class:`Member`
+            Requested member or None.
         """
         return room.members.from_user_id(self.id)
 
@@ -48,6 +56,11 @@ class User(Model):
         return cls(client, data)
 
 class AuthenticatedUser(User):
+    """
+    Represents the logged-in user. Subclass of :class:`User`, and inherits all its properties.
+    
+    
+    """
     def __init__(self, client, data: dict):
         super().__init__(client, data)
 
@@ -115,7 +128,11 @@ class Member(Model):
     def user(self):
         """
         Gets the user associated with this member.
-        :return: User behind this Member
+        
+        Returns
+        -------
+        :class:`User`
+            User behind this Member
         """
         return self.client.users.get(self._userid)
 
@@ -123,7 +140,11 @@ class Member(Model):
     def room(self):
         """
         Gets the room this member object is assigned to.
-        :return: Room of this member
+        
+        Returns
+        -------
+        :class:`Room`
+            Room of this member
         """
         return self.client.rooms.get(self._roomid)
 
@@ -131,7 +152,11 @@ class Member(Model):
     def role(self) -> Role:
         """
         Get this user's assigned role, or None if the user has no role.
-        :return: :class:`Role` enum or None
+        
+        Returns
+        -------
+        :class:`Role`
+            Assigned role of this member.
         """
         return Role.from_id(self._roleid)
 
@@ -139,8 +164,10 @@ class Member(Model):
         """
         Sets the role of this member, if the bot has the required right.
 
-        :param role: Role
-        :return:
+        Parameters
+        ----------
+        role: :class:`Role`
+            Role to give the member.
         """
         _, raw = await self.client.http.post(Endpoints.member_set_role(roleid=role.value.id, rid=self._roomid,
                                                                        uid=self._userid),

@@ -9,13 +9,33 @@ class Client:
     """
     The client class is the main class you should be using to communicate with the Dubtrack API.
     It provides methods for handling events and non-room-specific functions.
+    
+    All parameters are optional.
+    
+    .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/index.html
+    
+    Parameters
+    ----------
+    connector: :class:`aiohttp.BaseConnector`
+        A custom `aiohttp`_ connector may be passed if desired. This is to allow proxying.
+    proxy_options: :class:`ProxyOptions`
+        Proxy options, if proxying is required.
+    
+    Attributes
+    ----------
+    user: :class:`AuthenticatedUser`
+        The logged-in user. Populated after a successful `login` call, None otherwise.
+    logged_in: bool
+        True if logged in, False otherwise.
+    rooms: :class:`RoomCollection`
+        Cached rooms that the bot has joined at least once this session.
+    users: :class:`Collection`
+        Cached users the bot has seen.
+    messages: :class:`MessageCollection`
+        Messages received during this session.
     """
     def __init__(self, **kwargs):
-        """
-        Create a new Client instance.
-        :param kwargs: Optional options 
-        """
-        self.log = logging.getLogger("backtracked")
+        self._log = logging.getLogger("backtracked")
 
         self.loop = asyncio.get_event_loop()
         self.http = HTTPClient(self.loop, connector=kwargs.get("connector", None),
@@ -54,16 +74,21 @@ class Client:
             try:
                 self.loop.create_task(callback(*payload))
             except BaseException as err:
-                self.log.error("Error executing callback {name}: {err}"\
-                               .format(name=callback.__name__, err=err.with_traceback(err.__traceback__)))
+                self._log.error("Error executing callback {name}: {err}"
+                                .format(name=callback.__name__, err=err.with_traceback(err.__traceback__)))
 
     # LOGIN + CONNECT #
 
     async def login(self, email: str, password: str):
         """
         Log in to Dubtrack. This does not connect to the websocket.
-        :param email: Bot email
-        :param password: Bot password
+        
+        Parameters
+        ----------
+        email: str
+            Bot email
+        password: str
+            Bot password
         """
         await self.http.post(Endpoints.auth_dubtrack, data={"username": email, "password": password})
         _, user_raw = await self.http.get(Endpoints.auth_session)
@@ -82,13 +107,17 @@ class Client:
         """
         Log in to Dubtrack and connect to the websocket. This call is blocking, and abstracts away event loop
         creation. If you need more control over the event loop, use login and connect.
-        :param email: Bot email
-        :param password: Bot password
+        
+        Parameters
+        ----------
+        email: str
+            Bot email
+        password: str
+            Bot password
         """
-        loop = asyncio.get_event_loop()
         try:
-            loop.run_until_complete(self.login(email, password))
-            loop.run_until_complete(self.connect())
+            self.loop.run_until_complete(self.login(email, password))
+            self.loop.run_until_complete(self.connect())
         except KeyboardInterrupt:
             self.close()
             pending = asyncio.Task.all_tasks(loop=self.loop)
@@ -112,18 +141,24 @@ class Client:
     async def join_room(self, room_slug: str) -> Room:
         """
         Join a Dubtrack room via its URL slug.
-        :param room_slug: the room's slug
-        :return: Room object of the joined room 
+        
+        Parameters
+        ----------
+        room_slug: str
+            the room's slug
+
+        Returns
+        -------
+        :class:`Room`
+            Room object of the joined room 
         """
         _, room_raw = await self.http.get(Endpoints.room_join(slug=room_slug))
         room = Room(self, room_raw)
         self.rooms.add(room)
 
-        _, res = await self.http.post(Endpoints.room_users(rid=room.id))
-        import json
-        self.log.debug(json.dumps(res))
-        # TODO: this is the only endpoint that returns banned status, so it should be checked here
-        # TODO ALSO: the fourth fucking request - possibly schedule this rather than execute here
+        _, member_data = await self.http.post(Endpoints.room_users(rid=room.id))
+        room.members.add(Member(self, member_data.get("user", {})))
+        # TODO: the fourth fucking request - possibly schedule this rather than execute here
         # the forth request gets current room users, so it should be used for backfilling
         # still not sure if we're even caching roomusers, though it looks more and more likely
         # TODO: ESPECIALLY if we're backfilling them here! We have access to the Room instance and everything.
@@ -134,7 +169,7 @@ class Client:
     # INTERNAL HANDLING #
 
     def _handle_payload(self, payload: DubtrackMessage):
-        self.log.debug("WS Recv: {0.action.name} - {0.data}".format(payload))
+        self._log.debug("WS Recv: {0.action.name} - {0.data}".format(payload))
 
         if payload.action == Actions.connected:
             self.connection_id = payload.connectionId

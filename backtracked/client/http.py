@@ -6,6 +6,23 @@ from . import constants
 import logging
 
 class ProxyOptions:
+    """
+    Used to pass proxy options to the HTTP and WebSocket clients.
+    
+    .. _ClientSession: http://aiohttp.readthedocs.io/en/stable/client_reference.html#aiohttp.ClientSession
+    
+    Parameters
+    ----------
+    proxy_url: str
+        Proxy URL used by `aiohttp`_. Certain connectors will use this option.
+    client_request: :class:`aiohttp.ClientRequest`
+        Custom `ClientRequest`, if needed for your proxy solution.
+        
+    Examples
+    --------
+    
+    todo: aiosocks example
+    """
     def __init__(self, proxy_url: str, client_request: aiohttp.ClientRequest=None):
         self.proxy = proxy_url
         self.client_request = client_request if client_request is not None else aiohttp.ClientRequest
