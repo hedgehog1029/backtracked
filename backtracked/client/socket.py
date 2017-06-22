@@ -5,10 +5,11 @@ from . import constants
 from .engine.packets import Packet, PacketType
 
 import json
+import logging
 
-# TODO: Proper configurable logging rather than print
 class SocketClient:
     def __init__(self, client):
+        self.log = logging.getLogger("backtracked.socket")
         self._client = client
         self.loop = client.http.loop
         self.session = client.http.session
@@ -26,9 +27,9 @@ class SocketClient:
         if self._client.http.proxy_options.proxy is not None:
             opts["proxy"] = self._client.http.proxy_options.proxy
 
-        print("ws connect")
+        self.log.debug("WebSocket attempting to connect...")
         self.ws = await self.session.ws_connect(constants.ws_url(token), **opts)
-        print("connected")
+        self.log.debug("WebSocket connected.")
 
         async for msg in self.ws:
             if msg.type == aiohttp.WSMsgType.TEXT or msg.type == aiohttp.WSMsgType.BINARY:
@@ -38,7 +39,7 @@ class SocketClient:
                 print(msg.type)
                 print(msg.data)
 
-        print("Websocket was closed: {0}".format(self.ws.exception()))
+        self.log.warning("Websocket was closed: {0}".format(self.ws.exception()))
 
     async def _handle(self, packet: Packet):
         # print("WS Recv: [{0.type.name}] {0.data}".format(packet))
@@ -50,14 +51,17 @@ class SocketClient:
 
             self._setPingInterval()
         elif packet.type == PacketType.CLOSE:
-            print("WebSocket closed")
+            self.log.warning("WebSocket closed.")
         elif packet.type == PacketType.PONG:
             self._setPingInterval()
         elif packet.type == PacketType.MESSAGE:
             self._setPingTimeout()
 
             msg = DubtrackMessage(packet.to_dict())
-            self._client._handle_payload(msg)
+            try:
+                self._client._handle_payload(msg)
+            except BaseException as exc:
+                self.log.exception("There was an error processing a websocket payload:\n{0}".format(msg.action.name))
 
     def _setPingInterval(self):
         if self.interval_timer is not None:
@@ -92,7 +96,7 @@ class SocketClient:
     async def _send(self, payload: dict):
         packet = Packet(PacketType.MESSAGE, data_json=payload)
         await self.ws.send_str(packet.encode_str())
-        print("WS Send: {0.type.name} - {0.data}".format(packet))
+        self.log.debug("WS Send: {0.type.name} - {0.data}".format(packet))
 
 class AttributeProxy:
     def __init__(self, data: dict):

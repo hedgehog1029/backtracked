@@ -19,6 +19,7 @@ class Endpoints:
     chat_ban = fmt("/chat/ban/{rid}/user/{uid}")
     room_join = fmt("/room/{slug}")
     room_users = fmt("/room/{rid}/users")
+    member_set_role = fmt("/chat/{roleid}/{rid}/user/{uid}")
 
 class Actions(Enum):
     heartbeat = 0
@@ -45,7 +46,7 @@ class RoomActions(Enum):
     room_playlist_dub = "room_playlist-dub"
     room_playlist_grab = "room_playlist-queue-update-grabs"
     room_playlist_update_dubs = "room_playlist-queue-update-dub"
-    room_playlist_update = "room_playlist"
+    room_playlist_update = "room_playlist-update"
     room_update = "room-update"
     user_ban = "user-ban"
     user_image_update = "user-update"
@@ -58,6 +59,7 @@ class RoomActions(Enum):
     user_unmute = "user-unmute"
     user_unset_role = "user-unsetrole"
     user_update = "user_update"
+    room_pause_queue = "user-pause-queue"
 
 class Events:
     # main
@@ -67,12 +69,20 @@ class Events:
     on_chat_skip = "on_chat_skip"
     on_chat_delete = "on_chat_delete"
     on_member_join = "on_member_join"
+    on_member_presence = "on_member_presence"
 
     # aliases
     on_message = on_chat
 
+class RoleGlobal:
+    def __init__(self, **kwargs):
+        self.id = kwargs.get("id")
+        self.type = kwargs.get("type")
+        self.label = kwargs.get("label")
+        self.rights = kwargs.get("rights", [])
+
 # Public
-__all__ = ["Presence"]
+__all__ = ["Presence", "Role"]
 
 class Presence(Enum):
     enter = 0
@@ -81,3 +91,29 @@ class Presence(Enum):
 
     join = enter
     leave = exit
+
+# Possibly have a Rights enum
+class Role(Enum):
+    resident_dj = RoleGlobal(id="5615feb8e596154fc2000002", type="resident-dj", label="Resident DJ", rights=["set-dj"])
+    vip = RoleGlobal(id="5615fe1ee596154fc2000001", type="vip", label="VIP", rights=["skip", "set-dj"])
+    moderator = RoleGlobal(id="52d1ce33c38a06510c000001", type="mod", label="Moderator", rights=["skip", "queue-order",
+                           "kick", "ban", "mute", "set-dj", "lock-queue", "delete-chat", "chat-mention"])
+    manager = RoleGlobal(id="5615fd84e596150061000003", type="manager", label="Manager", rights=["skip", "queue-order",
+                         "kick", "ban", "mute", "set-dj", "lock-queue", "delete-chat", "chat-mention", "set-roles"])
+    co_owner = RoleGlobal(id="5615fa9ae596154a5c000000", type="co-owner", label="Co-Owner", rights=["skip",
+                          "queue-order", "kick", "ban", "mute", "set-dj", "lock-queue", "delete-chat", "chat-mention",
+                          "set-roles", "update-room", "set-managers"])
+
+    @classmethod
+    def _role_map(cls):
+        return {
+            "5615feb8e596154fc2000002": cls.resident_dj,
+            "5615fe1ee596154fc2000001": cls.vip,
+            "52d1ce33c38a06510c000001": cls.moderator,
+            "5615fd84e596150061000003": cls.manager,
+            "5615fa9ae596154a5c000000": cls.co_owner
+        }
+
+    @classmethod
+    def from_id(cls, role_id: str):
+        return cls._role_map().get(role_id)

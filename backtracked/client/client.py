@@ -3,17 +3,20 @@ from .constants import Endpoints, Actions, Events, RoomActions
 from .socket import SocketClient, DubtrackMessage, RoomActionMessage
 from ..models import *
 import asyncio
+import logging
 
 class Client:
     """
     The client class is the main class you should be using to communicate with the Dubtrack API.
-    It provides methods for handling events and 
+    It provides methods for handling events and non-room-specific functions.
     """
     def __init__(self, **kwargs):
         """
         Create a new Client instance.
         :param kwargs: Optional options 
         """
+        self.log = logging.getLogger("backtracked")
+
         self.loop = asyncio.get_event_loop()
         self.http = HTTPClient(self.loop, connector=kwargs.get("connector", None),
                                proxy_options=kwargs.get("proxy_options", None))
@@ -51,8 +54,8 @@ class Client:
             try:
                 self.loop.create_task(callback(*payload))
             except BaseException as err:
-                print("Error executing callback {name}: {err}".format(name=callback.__name__,
-                                                                      err=err.with_traceback(err.__traceback__)))
+                self.log.error("Error executing callback {name}: {err}"\
+                               .format(name=callback.__name__, err=err.with_traceback(err.__traceback__)))
 
     # LOGIN + CONNECT #
 
@@ -63,7 +66,7 @@ class Client:
         :param password: Bot password
         """
         await self.http.post(Endpoints.auth_dubtrack, data={"username": email, "password": password})
-        user_raw = await self.http.get(Endpoints.auth_session)
+        _, user_raw = await self.http.get(Endpoints.auth_session)
         self.user = AuthenticatedUser.from_data(self, user_raw)
 
         self.logged_in = True
@@ -72,7 +75,7 @@ class Client:
         """
         Connect to the Dubtrack websocket. You must call login first.
         """
-        resp = await self.http.get(Endpoints.auth_token)
+        _, resp = await self.http.get(Endpoints.auth_token)
         await self.socket.connect(resp["token"])
 
     def run(self, email, password):
@@ -112,11 +115,18 @@ class Client:
         :param room_slug: the room's slug
         :return: Room object of the joined room 
         """
-        room_raw = await self.http.get(Endpoints.room_join(slug=room_slug))
+        _, room_raw = await self.http.get(Endpoints.room_join(slug=room_slug))
         room = Room(self, room_raw)
         self.rooms.add(room)
 
-        await self.http.post(Endpoints.room_users(rid=room.id))
+        _, res = await self.http.post(Endpoints.room_users(rid=room.id))
+        import json
+        self.log.debug(json.dumps(res))
+        # TODO: this is the only endpoint that returns banned status, so it should be checked here
+        # TODO ALSO: the fourth fucking request - possibly schedule this rather than execute here
+        # the forth request gets current room users, so it should be used for backfilling
+        # still not sure if we're even caching roomusers, though it looks more and more likely
+        # TODO: ESPECIALLY if we're backfilling them here! We have access to the Room instance and everything.
 
         await self.socket.send(action=Actions.join_room, channel=room.room_id)
         return room
@@ -124,7 +134,7 @@ class Client:
     # INTERNAL HANDLING #
 
     def _handle_payload(self, payload: DubtrackMessage):
-        print("WS Recv: {0.action.name} - {0.data}".format(payload))
+        self.log.debug("WS Recv: {0.action.name} - {0.data}".format(payload))
 
         if payload.action == Actions.connected:
             self.connection_id = payload.connectionId
@@ -136,10 +146,12 @@ class Client:
             if room is not None:
                 self._dispatch(Events.on_joined_room, room)
         elif payload.action == Actions.presence_change:
+            room = self.rooms.from_room_id(payload.channel)
             user = self.users.get(payload.presence.get("clientId"))
+            # TODO: Still not sure if we should cache members...
 
             if user is not None:
-                pass
+                self._dispatch(Events.on_member_presence, room, user)
         elif payload.action == Actions.room_action:
             room = self.rooms.from_room_id(payload.channel)
             msg = RoomActionMessage(payload.message)
@@ -155,7 +167,7 @@ class Client:
 
             self._dispatch(Events.on_chat, message)
         elif msg.name == RoomActions.chat_skip:
-            pass
+            pass  # TODO: Handle this once we cache the playlist?
         elif msg.name == RoomActions.chat_delete:
             user = User(self, msg.value.user)
             self.users.add(user)
@@ -170,5 +182,6 @@ class Client:
             user = User(self, msg.value.user)
             self.users.add(user)
             member = Member(self, msg.value.roomUser)
+            room.members.add(member)
 
-            self._dispatch(Events.on_member_join, room, member)
+            self._dispatch(Events.on_member_join, member)

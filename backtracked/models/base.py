@@ -11,6 +11,9 @@ class Model:
     def __getitem__(self, item):
         return getattr(self, item, None)
 
+    def __str__(self):
+        return f"{self.__class__.__name__} object: {self.__dict__}"
+
 class BaseCollection:
     def add(self, obj):
         pass

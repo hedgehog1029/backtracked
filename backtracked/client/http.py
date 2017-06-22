@@ -3,6 +3,8 @@ import asyncio
 from .. import __version__
 from . import constants
 
+import logging
+
 class ProxyOptions:
     def __init__(self, proxy_url: str, client_request: aiohttp.ClientRequest=None):
         self.proxy = proxy_url
@@ -15,6 +17,7 @@ class HTTPClient:
         headers = {"User-Agent": user_agent}
         default_connector = aiohttp.TCPConnector(verify_ssl=True)
 
+        self.log = logging.getLogger("backtracked.http")
         self.loop = loop
         self.connector = default_connector if connector is None else connector
         self.proxy_options = ProxyOptions(None) if proxy_options is None else proxy_options
@@ -28,11 +31,13 @@ class HTTPClient:
             kwargs["proxy"] = self.proxy_options.proxy
 
         r = await self.session.request(method, url, **kwargs)
-        print("{method} {path}: {0.status}".format(r, method=method, path=path))
+        self.log.debug("{method} {path}: {0.status}".format(r, method=method, path=path))
 
         if r.status == 200:
             j = await r.json()
-            return j["data"]
+            return r.status, j["data"]
+        else:
+            return r.status, await r.text()
 
     def get(self, path: str, **kwargs):
         return self.request("GET", path, **kwargs)
