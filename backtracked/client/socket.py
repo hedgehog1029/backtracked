@@ -36,9 +36,10 @@ class SocketClient:
                 packet = Packet.decode(msg.data)
                 await self._handle(packet)
             else:
-                print(msg.type)
-                print(msg.data)
+                self.log.debug(msg.type)
+                self.log.debug(msg.data)
 
+        # TODO: Reconnect, I guess
         self.log.warning("Websocket was closed: {0}".format(self.ws.exception()))
 
     async def _handle(self, packet: Packet):
@@ -115,7 +116,13 @@ class DubtrackMessage(AttributeProxy):
 
 class RoomActionMessage:
     def __init__(self, message: dict):
-        self.name = constants.RoomActions(message.get("name"))
+        if message.get("name") in constants.RoomActions:
+            self.name = constants.RoomActions(message.get("name"))
+        elif message.get("name").startswith("user_update_"):
+            self.name = constants.RoomActions.user_update
+        else:
+            self.name = constants.RoomActions.dynamic
+
         self.type = message.get("type")
 
         if self.type == "json":

@@ -51,6 +51,7 @@ class Client:
         self.rooms = RoomCollection()
         self.users = Collection()
         self.messages = MessageCollection()
+        self.song_cache = Collection()
 
     def event(self, coro):
         """
@@ -158,15 +159,22 @@ class Client:
 
         _, member_data = await self.http.post(Endpoints.room_users(rid=room.id))
         room.members.add(Member(self, member_data.get("user", {})))
-        # TODO: the fourth fucking request - possibly schedule this rather than execute here
-        # the forth request gets current room users, so it should be used for backfilling
-        # still not sure if we're even caching roomusers, though it looks more and more likely
-        # TODO: ESPECIALLY if we're backfilling them here! We have access to the Room instance and everything.
+
+        self.loop.create_task(self._backfill_room(room))
 
         await self.socket.send(action=Actions.join_room, channel=room.room_id)
         return room
 
     # INTERNAL HANDLING #
+
+    async def _backfill_room(self, room: Room):
+        _, user_list = await self.http.get(Endpoints.room_users(rid=room.id))
+
+        for member_data in user_list:
+            user = User(self, member_data.get("_user", {}))
+            member = Member(self, member_data)
+            self.users.add(user)
+            room.members.add(member)
 
     def _handle_payload(self, payload: DubtrackMessage):
         self._log.debug("WS Recv: {0.action.name} - {0.data}".format(payload))
@@ -213,6 +221,13 @@ class Client:
                 self._dispatch(Events.on_chat_delete, message)
         elif msg.name == RoomActions.room_playlist_dub:
             pass
+        elif msg.name == RoomActions.room_playlist_update:
+            song_info = SongInfo(msg.value.songInfo)
+            self.song_cache.add(song_info)
+            song = Song(self, msg.value.song)
+            room.playlist.append(song)
+
+            self._dispatch(Events.on_playlist_song_add, song)
         elif msg.name == RoomActions.user_join:
             user = User(self, msg.value.user)
             self.users.add(user)
@@ -220,3 +235,8 @@ class Client:
             room.members.add(member)
 
             self._dispatch(Events.on_member_join, member)
+        elif msg.name == RoomActions.user_update:
+            member = Member(self, msg.value.user)
+            room.members.add(member)
+
+            self._dispatch(Events.on_member_update, member)

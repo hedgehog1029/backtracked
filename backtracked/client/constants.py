@@ -61,6 +61,8 @@ class RoomActions(Enum):
     user_update = "user_update"
     room_pause_queue = "user-pause-queue"
 
+    dynamic = "*"
+
 class Events:
     # main
     on_ready = "on_ready"
@@ -70,6 +72,8 @@ class Events:
     on_chat_delete = "on_chat_delete"
     on_member_join = "on_member_join"
     on_member_presence = "on_member_presence"
+    on_member_update = "on_member_update"
+    on_playlist_song_add = "on_playlist_song_add"
 
     # aliases
     on_message = on_chat

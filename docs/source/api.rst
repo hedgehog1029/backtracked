@@ -49,6 +49,18 @@ Message
 .. autoclass:: Message
    :members:
 
+Song
+^^^^
+
+.. autoclass:: Song
+   :members:
+
+SongInfo
+^^^^^^^^
+
+.. autoclass:: SongInfo
+   :members:
+
 Helper Classes
 --------------
 
@@ -79,3 +91,12 @@ Role
 
 .. autoclass:: Role
    :undoc-members:
+
+Utilities
+---------
+
+The `utils` module contains several helper functions useful for converting and extracting information
+from various sources.
+
+.. automodule:: backtracked.utils
+   :members:

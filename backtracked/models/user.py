@@ -58,8 +58,6 @@ class User(Model):
 class AuthenticatedUser(User):
     """
     Represents the logged-in user. Subclass of :class:`User`, and inherits all its properties.
-    
-    
     """
     def __init__(self, client, data: dict):
         super().__init__(client, data)
@@ -120,7 +118,11 @@ class Member(Model):
         self.banned_time = utils.dt(data.get("bannedTime", 0))
         self.banned_until = utils.dt(data.get("bannedUntil", 0))
 
-        self._roleid = data.get("roleid", {}).get("_id")
+        if isinstance(data.get("roleid"), str):
+            self._roleid = data.get("roleid")
+        elif isinstance(data.get("roleid"), dict):
+            self._roleid = data.get("roleid", {}).get("_id")
+
         self._roomid = data.get("roomid")
         self._userid = data.get("userid")
 

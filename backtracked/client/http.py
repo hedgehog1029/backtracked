@@ -10,6 +10,7 @@ class ProxyOptions:
     Used to pass proxy options to the HTTP and WebSocket clients.
     
     .. _ClientSession: http://aiohttp.readthedocs.io/en/stable/client_reference.html#aiohttp.ClientSession
+    .. _aiosocks: https://github.com/nibrag/aiosocks
     
     Parameters
     ----------
@@ -20,8 +21,22 @@ class ProxyOptions:
         
     Examples
     --------
-    
-    todo: aiosocks example
+
+    `aiosocks`_ socks4 proxy example:
+
+    .. code-block:: python
+
+        from backtracked import Client, ProxyOptions
+        from aiosocks import connector
+
+        proxy_opts = ProxyOptions("socks4://127.0.0.1:1080", client_request=connector.ProxyClientRequest)
+        c = Client(connector=connector.ProxyConnector(), proxy_options=proxy_opts)
+
+        @c.event
+        async def on_ready():
+            print("Logged in as {0.username}".format(c.user))
+
+        c.run("email", "password")
     """
     def __init__(self, proxy_url: str, client_request: aiohttp.ClientRequest=None):
         self.proxy = proxy_url
