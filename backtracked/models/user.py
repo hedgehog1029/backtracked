@@ -15,7 +15,7 @@ class User(Model):
         ID of this user.
     username: str
         User's chosen username.
-    created_at: `datetime.datetime`
+    created_at: :class:`datetime.datetime`
         Datetime representing the date when this user created their account.
     avatar_url: str
         URL of this user's avatar.
@@ -91,16 +91,10 @@ class Member(Model):
         ?????
     banned: bool
         True if this member is banned, False otherwise
-    banned_time: `datetime.datetime`
+    banned_time: :class:`datetime.datetime`
         Datetime representing the time this member was banned. Useless if `banned` is False.
-    banned_until: `datetime.datetime`
+    banned_until: :class:`datetime.datetime`
         Datetime representing the time this member will be unbanned. Useless if `banned` is False.
-    user: :class:`User`
-        User object associated with this member object.
-    room: :class:`Room`
-        Room object associated with this member object.
-    role: :class:`Role`
-        Role enum representing this member's assigned role, or None if no role has been assigned.
     """
     def __init__(self, client, data: dict):
         super().__init__(client)
@@ -129,7 +123,7 @@ class Member(Model):
     @property
     def user(self):
         """
-        Gets the user associated with this member.
+        User object associated with this member object.
         
         Returns
         -------

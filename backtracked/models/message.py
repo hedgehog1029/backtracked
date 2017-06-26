@@ -17,7 +17,7 @@ class Message(Model):
         Text of the message.
     deleted: bool
         True if the message has been deleted, False otherwise.
-    created_at: datetime.datetime
+    created_at: :class:`datetime.datetime`
         Datetime representing the time this message was sent.
     """
     def __init__(self, client, data: dict):
