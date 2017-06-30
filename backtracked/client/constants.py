@@ -63,6 +63,10 @@ class RoomActions(Enum):
 
     dynamic = "*"
 
+    @classmethod
+    def has_value(cls, value):
+        return value in cls._value2member_map_
+
 class Events:
     # main
     on_ready = "on_ready"
