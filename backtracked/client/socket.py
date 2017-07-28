@@ -116,7 +116,7 @@ class DubtrackMessage(AttributeProxy):
 
 class RoomActionMessage:
     def __init__(self, message: dict):
-        if message.get("name") in constants.RoomActions:
+        if constants.RoomActions.has_value(message.get("name")):
             self.name = constants.RoomActions(message.get("name"))
         elif message.get("name").startswith("user_update_"):
             self.name = constants.RoomActions.user_update
