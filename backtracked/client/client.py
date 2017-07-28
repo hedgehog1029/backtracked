@@ -52,6 +52,7 @@ class Client:
         self.users = Collection()
         self.messages = MessageCollection()
         self.song_cache = Collection()
+        self.conversations = Collection()
 
     def event(self, coro):
         """
@@ -164,6 +165,19 @@ class Client:
 
         await self.socket.send(action=Actions.join_room, channel=room.room_id)
         return room
+
+    async def fetch_conversations(self):
+        """
+        Fetch currently open conversations from Dubtrack.
+        
+        This method is called automatically if the parameter `recent_conversations` is True
+        when initializing this :class:`Client`.
+        """
+        _, conversations = await self.http.get(Endpoints.conversations)
+
+        for conv_data in conversations:
+
+            self.conversations.add()
 
     # INTERNAL HANDLING #
 

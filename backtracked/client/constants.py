@@ -17,9 +17,14 @@ class Endpoints:
     auth_token = "/auth/token"
     chat = fmt("/chat/{rid}")
     chat_ban = fmt("/chat/ban/{rid}/user/{uid}")
+    conversations = "/message"
+    conversations_new = "/message/new"
+    conversation = fmt("/message/{cid}")
+    conversation_read = fmt("/message/{cid}/read")
     room_join = fmt("/room/{slug}")
     room_users = fmt("/room/{rid}/users")
     member_set_role = fmt("/chat/{roleid}/{rid}/user/{uid}")
+    user_update_username = "/user/updateUsername"
 
 class Actions(Enum):
     heartbeat = 0
