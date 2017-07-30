@@ -43,6 +43,8 @@ class Actions(Enum):
     left_room = 13
     presence_change = 14
     room_action = 15
+    sync = 16
+    token = 17
 
 class RoomActions(Enum):
     chat_message = "chat-message"
@@ -66,6 +68,8 @@ class RoomActions(Enum):
     user_update = "user_update"
     room_pause_queue = "user-pause-queue"
 
+    new_message = "new-message"
+
     dynamic = "*"
 
     @classmethod
@@ -83,6 +87,7 @@ class Events:
     on_member_presence = "on_member_presence"
     on_member_update = "on_member_update"
     on_playlist_song_add = "on_playlist_song_add"
+    on_private_message = "on_private_message"
 
     # aliases
     on_message = on_chat

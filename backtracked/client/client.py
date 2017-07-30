@@ -20,6 +20,8 @@ class Client:
         A custom `aiohttp`_ connector may be passed if desired. This is to allow proxying.
     proxy_options: :class:`ProxyOptions`
         Proxy options, if proxying is required.
+    recent_conversations: bool
+        If True, calls :meth:`Client.fetch_conversations` after you have logged in. Defaults to True.
     
     Attributes
     ----------
@@ -45,14 +47,15 @@ class Client:
         self.socket = SocketClient(self)
         self.logged_in = False
         self.connection_id = None
+        self._recent_conversations = kwargs.get("recent_conversations", True)
 
         self.event_handlers = {}
 
         self.rooms = RoomCollection()
-        self.users = Collection()
+        self.users = UserCollection()
         self.messages = MessageCollection()
         self.song_cache = Collection()
-        self.conversations = Collection()
+        self.conversations = ConversationCollection()
 
     def event(self, coro):
         """
@@ -97,6 +100,9 @@ class Client:
         self.user = AuthenticatedUser.from_data(self, user_raw)
 
         self.logged_in = True
+
+        if self._recent_conversations:
+            self.loop.create_task(self.fetch_conversations())
 
     async def connect(self):
         """
@@ -176,8 +182,8 @@ class Client:
         _, conversations = await self.http.get(Endpoints.conversations)
 
         for conv_data in conversations:
-
-            self.conversations.add()
+            conv = Conversation(self, conv_data)
+            self.conversations.add(conv)
 
     # INTERNAL HANDLING #
 
@@ -210,10 +216,14 @@ class Client:
             if user is not None:
                 self._dispatch(Events.on_member_presence, room, user)
         elif payload.action == Actions.room_action:
-            room = self.rooms.from_room_id(payload.channel)
             msg = RoomActionMessage(payload.message)
 
-            self._handle_room_action(room=room, msg=msg)
+            if payload.channel.startswith('room:'):
+                room = self.rooms.from_room_id(payload.channel)
+                self._handle_room_action(room=room, msg=msg)
+            elif payload.channel.startswith('user:'):
+                user = self.users.from_channel(payload.channel)
+                self._handle_user_action(user=user, msg=msg)
 
     def _handle_room_action(self, room: Room, msg: RoomActionMessage):
         if msg.name == RoomActions.chat_message:
@@ -254,3 +264,14 @@ class Client:
             room.members.add(member)
 
             self._dispatch(Events.on_member_update, member)
+
+    def _handle_user_action(self, user: User, msg: RoomActionMessage):
+        if msg.name == RoomActions.new_message:
+            sender_id = msg.value.userid
+
+            if sender_id == self.user.id:
+                return
+
+            sender = self.users.get(sender_id)
+
+            self._dispatch(Events.on_private_message, sender)

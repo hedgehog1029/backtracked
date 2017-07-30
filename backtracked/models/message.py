@@ -4,7 +4,10 @@ from .room import Room
 from ..client.constants import Endpoints
 from .. import utils
 
-__all__ = ["Message", "MessageCollection"]
+__all__ = ["Message", "MessageCollection", "Conversation", "ConversationCollection"]
+
+def everything_except(iterable, exception):
+    return filter(lambda o: o != exception, iterable)
 
 class Message(Model):
     """
@@ -88,32 +91,39 @@ class Conversation(Model):
         ID of this conversation.
     created_at: :class:`datetime.datetime`
         Time this conversation was started.
+    latest_message_str: str
+        Text of the last message to be sent in this conversation. May not be up-to-date unless :meth:`fetch` is called.
     """
     def __init__(self, client, data: dict):
         super().__init__(client)
         self.id = data.get("_id")
         self.created_at = utils.dt(data.get("created"))
-        self._users = data.get("usersid")
-        self._latest_message = data.get("latest_message")
-        self._latest_message_str = data.get("latest_message_str")
+        self.latest_message_str = data.get("latest_message_str")
+        self._latest_message_dt = data.get("latest_message")
         self._read = data.get("users_read")
+        self._users = []
+
+        for user in data.get("usersid"):
+            u = User(self.client, user)
+            self._users.append(u.id)
+            self.client.users.add(u)
 
     @property
-    def _recipient(self):
-        others = filter(lambda uid: self.client.user.id != uid, self._users)
-        return next(others)
+    def _recipients(self):
+        others = everything_except(self._users, self.client.user.id)
+        return list(others)
 
     @property
-    def recipient(self) -> User:
+    def recipients(self) -> list:
         """
-        Get the primary recipient of this conversation.
+        Get the recipients of this conversation.
         
         Returns
         -------
-        :class:`User`
-            Recipient of this conversation.
+        list[:class:`User`]
+            Recipients of this conversation.
         """
-        return self.client.users.get(self._recipient)
+        return list(map(self.client.users.get, self._recipients))
 
     async def fetch(self) -> list:
         """
@@ -125,8 +135,7 @@ class Conversation(Model):
             List of message IDs in this conversation.
         """
         _, messages = await self.client.http.get(Endpoints.conversation(cid=self.id))
-        self._latest_message = messages[0]['_id']
-        self._latest_message_str = messages[0]['']
+        self.latest_message_str = messages[0]['message']
 
         for msg_data in messages:
             message = Message.from_conversation_message(self.client, msg_data)
@@ -135,21 +144,58 @@ class Conversation(Model):
 
         return list(map(lambda m: m['_id'], messages))
 
-    def get_latest_message(self) -> Message:
+    async def send_message(self, text: str):
         """
-        Get the latest message. Does not fetch messages from Dubtrack.
-        If you want to be sure you're getting the latest messages, call :meth:`Client.fetch_conversations` or
-        :meth:`Conversation.fetch` first.
+        Send a message to this conversation.
         
-        Returns
-        -------
-        :class:`Message`
-            Latest message in this conversation.
+        Parameters
+        ----------
+        text: str
+            Text to send in the message.
         """
-        return self.client.messages.get(self._latest_message)
+        data = {
+            "message": text,
+            "userid": self.client.user.id
+        }
+
+        _, msg_data = await self.client.http.post(Endpoints.conversation(cid=self.id), json=data)
+        # TODO: fuck me the message data is in yet *another* format
+        # we'll deal with this later
+
+    async def mark_as_read(self):
+        """
+        Marks this conversation as read by the current user.
+        """
+        _, resp = await self.client.http.post(Endpoints.conversation_read(cid=self.id))
+
+        self._read = resp.get("users_read")
 
     def has_read(self, user: User) -> bool:
+        """
+        Checks if the passed :class:`User` has read this conversation.
+        
+        Parameters
+        ----------
+        user: :class:`User`
+            User to check
+
+        Returns
+        -------
+        bool:
+            True if the user has read this conversation, False otherwise.
+        """
         return user.id in self._read
 
 class MessageCollection(OrderedCollection):
     pass
+
+class ConversationCollection(OrderedCollection):
+    def get_by_recipients(self, *args):
+        def _checker(conv: Conversation):
+            for uid in args:
+                if uid not in conv._recipients:
+                    return False
+            return True
+
+        convs = filter(_checker, self.values())
+        return next(convs, None)

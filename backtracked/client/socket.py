@@ -49,7 +49,7 @@ class SocketClient:
         self.log.warning("Websocket was closed: {0}".format(self.ws.exception()))
 
     async def _handle(self, packet: Packet):
-        # print("WS Recv: [{0.type.name}] {0.data}".format(packet))
+        # self.log.debug("Raw recv: [{0.type.name}] {0.data}".format(packet))
 
         if packet.type == PacketType.OPEN:
             j = packet.to_dict()
