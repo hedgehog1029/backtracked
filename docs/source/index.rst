@@ -11,6 +11,7 @@ Dubtrack API.
 
 Features:
    * Full support for the Dubtrack API
+   * Supports sending and receiving direct messages
    * Sane HTTP handling that obeys rate limits
    * Object-oriented python API
 
