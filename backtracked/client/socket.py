@@ -7,6 +7,12 @@ from .engine.packets import Packet, PacketType
 import json
 import logging
 
+def cleaner(future: asyncio.Future):
+    try:
+        future.exception()
+    except (asyncio.CancelledError, asyncio.InvalidStateError):
+        pass
+
 class SocketClient:
     def __init__(self, client):
         self.log = logging.getLogger("backtracked.socket")
@@ -43,7 +49,7 @@ class SocketClient:
         self.log.warning("Websocket was closed: {0}".format(self.ws.exception()))
 
     async def _handle(self, packet: Packet):
-        # print("WS Recv: [{0.type.name}] {0.data}".format(packet))
+        # self.log.debug("Raw recv: [{0.type.name}] {0.data}".format(packet))
 
         if packet.type == PacketType.OPEN:
             j = packet.to_dict()
@@ -74,6 +80,7 @@ class SocketClient:
             self._setPingInterval()
 
         self.interval_timer = self.loop.create_task(interval())
+        self.interval_timer.add_done_callback(cleaner)
 
     def _setPingTimeout(self, ping_timeout=0):
         if self.timeout_timer is not None:
@@ -85,6 +92,7 @@ class SocketClient:
 
         tout = ping_timeout if ping_timeout > 0 else self.ping_timeout+self.ping_interval
         self.timeout_timer = self.loop.create_task(timeout(tout))
+        self.timeout_timer.add_done_callback(cleaner)
 
     async def _ping(self):
         await self.ws.send_bytes(Packet(PacketType.PING).encode())

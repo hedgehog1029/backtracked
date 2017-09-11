@@ -17,9 +17,14 @@ class Endpoints:
     auth_token = "/auth/token"
     chat = fmt("/chat/{rid}")
     chat_ban = fmt("/chat/ban/{rid}/user/{uid}")
+    conversations = "/message"
+    conversations_new = "/message/new"
+    conversation = fmt("/message/{cid}")
+    conversation_read = fmt("/message/{cid}/read")
     room_join = fmt("/room/{slug}")
     room_users = fmt("/room/{rid}/users")
     member_set_role = fmt("/chat/{roleid}/{rid}/user/{uid}")
+    user_update_username = "/user/updateUsername"
 
 class Actions(Enum):
     heartbeat = 0
@@ -38,6 +43,8 @@ class Actions(Enum):
     left_room = 13
     presence_change = 14
     room_action = 15
+    sync = 16
+    token = 17
 
 class RoomActions(Enum):
     chat_message = "chat-message"
@@ -61,6 +68,8 @@ class RoomActions(Enum):
     user_update = "user_update"
     room_pause_queue = "user-pause-queue"
 
+    new_message = "new-message"
+
     dynamic = "*"
 
     @classmethod
@@ -78,6 +87,7 @@ class Events:
     on_member_presence = "on_member_presence"
     on_member_update = "on_member_update"
     on_playlist_song_add = "on_playlist_song_add"
+    on_private_message = "on_private_message"
 
     # aliases
     on_message = on_chat

@@ -1,9 +1,11 @@
 from .base import Model, Collection
-from ..client.constants import Role, Endpoints
+from ..client.constants import Role, Endpoints, Actions
 from .. import utils
 import datetime
+import logging
 
-__all__ = ["User", "AuthenticatedUser", "Member"]
+__all__ = ["User", "AuthenticatedUser", "Member", "UserCollection"]
+logger = logging.getLogger("backtracked.models.user")
 
 class User(Model):
     """
@@ -31,8 +33,26 @@ class User(Model):
         self.avatar_url = data.get("profileImage", {}).get("url")
 
     # Some methods to be actually implemented in future
-    async def open_pm(self):
-        pass
+    async def open_conversation(self):
+        """
+        Opens a conversation with this user. Will re-use a previous conversation if the bot has one cached.
+        
+        Returns
+        -------
+        :class:`Conversation`
+            A conversation with this user as the recipient.
+        """
+        from .message import Conversation
+        conv = self.client.conversations.get_by_recipients(self.id)
+
+        if conv is None:
+            _, raw = await self.client.http.post(Endpoints.conversations, data={"usersid": [self.id]})
+            print(raw)
+            conv = Conversation(self.client, raw)
+
+        # Also, join this user's room, so we get new-message events.
+        await self.client.socket.send(action=Actions.join_room, channel=f"user:{self.id}")
+        return conv
 
     def member_of(self, room):
         """
@@ -64,6 +84,27 @@ class AuthenticatedUser(User):
 
     async def update_profile(self, **kwargs):
         pass
+
+    async def change_username(self, username):
+        """
+        Change this account's username.
+        
+        Parameters
+        ----------
+        username: str
+            New username to use
+
+        Returns
+        -------
+        bool
+            True if the username was successfully changed, False otherwise.
+        """
+        status, _ = await self.client.http.post(Endpoints.user_update_username, data={"username": username})
+
+        if status == 200:
+            return True
+        else:
+            return False
 
 class Member(Model):
     """
@@ -169,6 +210,11 @@ class Member(Model):
                                                                        uid=self._userid),
                                              data={"realTimeChannel": self.room.rtc})
         print(raw)
+
+class UserCollection(Collection):
+    def from_channel(self, channel_id: str):
+        _, uid = channel_id.split(":")
+        return self.get(uid)
 
 class MemberCollection(Collection):
     def from_user_id(self, user_id: str):
