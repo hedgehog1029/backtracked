@@ -1,0 +1,361 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>backtracked.client.client &#8212; backtracked 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for backtracked.client.client</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.http</span> <span class="k">import</span> <span class="n">HTTPClient</span>
+<span class="kn">from</span> <span class="nn">.constants</span> <span class="k">import</span> <span class="n">Endpoints</span><span class="p">,</span> <span class="n">Actions</span><span class="p">,</span> <span class="n">Events</span><span class="p">,</span> <span class="n">RoomActions</span>
+<span class="kn">from</span> <span class="nn">.socket</span> <span class="k">import</span> <span class="n">SocketClient</span><span class="p">,</span> <span class="n">DubtrackMessage</span><span class="p">,</span> <span class="n">RoomActionMessage</span>
+<span class="kn">from</span> <span class="nn">..models</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<div class="viewcode-block" id="Client"><a class="viewcode-back" href="../../../api.html#backtracked.Client">[docs]</a><span class="k">class</span> <span class="nc">Client</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The client class is the main class you should be using to communicate with the Dubtrack API.</span>
+<span class="sd">    It provides methods for handling events and non-room-specific functions.</span>
+<span class="sd">    </span>
+<span class="sd">    All parameters are optional.</span>
+<span class="sd">    </span>
+<span class="sd">    .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/index.html</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    connector: :class:`aiohttp.BaseConnector`</span>
+<span class="sd">        A custom `aiohttp`_ connector may be passed if desired. This is to allow proxying.</span>
+<span class="sd">    proxy_options: :class:`ProxyOptions`</span>
+<span class="sd">        Proxy options, if proxying is required.</span>
+<span class="sd">    recent_conversations: bool</span>
+<span class="sd">        If True, calls :meth:`Client.fetch_conversations` after you have logged in. Defaults to True.</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    user: :class:`AuthenticatedUser`</span>
+<span class="sd">        The logged-in user. Populated after a successful `login` call, None otherwise.</span>
+<span class="sd">    logged_in: bool</span>
+<span class="sd">        True if logged in, False otherwise.</span>
+<span class="sd">    rooms: :class:`RoomCollection`</span>
+<span class="sd">        Cached rooms that the bot has joined at least once this session.</span>
+<span class="sd">    users: :class:`Collection`</span>
+<span class="sd">        Cached users the bot has seen.</span>
+<span class="sd">    messages: :class:`MessageCollection`</span>
+<span class="sd">        Messages received during this session.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;backtracked&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">http</span> <span class="o">=</span> <span class="n">HTTPClient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">,</span> <span class="n">connector</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;connector&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                               <span class="n">proxy_options</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;proxy_options&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket</span> <span class="o">=</span> <span class="n">SocketClient</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logged_in</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_recent_conversations</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;recent_conversations&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_handlers</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rooms</span> <span class="o">=</span> <span class="n">RoomCollection</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">users</span> <span class="o">=</span> <span class="n">UserCollection</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="n">MessageCollection</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">song_cache</span> <span class="o">=</span> <span class="n">Collection</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conversations</span> <span class="o">=</span> <span class="n">ConversationCollection</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Client.event"><a class="viewcode-back" href="../../../api.html#backtracked.Client.event">[docs]</a>    <span class="k">def</span> <span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decorator used for registering event handlers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span><span class="n">coro</span><span class="p">):</span>
+            <span class="n">event_name</span> <span class="o">=</span> <span class="n">coro</span><span class="o">.</span><span class="vm">__name__</span>
+
+            <span class="k">if</span> <span class="n">event_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_handlers</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">event_handlers</span><span class="p">[</span><span class="n">event_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">event_handlers</span><span class="p">[</span><span class="n">event_name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">coro</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">BaseException</span><span class="p">(</span><span class="s2">&quot;Passed function wasn&#39;t a coroutine!&quot;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_dispatch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ev_name</span><span class="p">,</span> <span class="o">*</span><span class="n">payload</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ev_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_handlers</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_handlers</span><span class="p">[</span><span class="n">ev_name</span><span class="p">]:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">callback</span><span class="p">(</span><span class="o">*</span><span class="n">payload</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error executing callback </span><span class="si">{name}</span><span class="s2">: </span><span class="si">{err}</span><span class="s2">&quot;</span>
+                                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">callback</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="n">err</span><span class="o">.</span><span class="n">with_traceback</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">__traceback__</span><span class="p">)))</span>
+
+    <span class="c1"># LOGIN + CONNECT #</span>
+
+<div class="viewcode-block" id="Client.login"><a class="viewcode-back" href="../../../api.html#backtracked.Client.login">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Log in to Dubtrack. This does not connect to the websocket.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        email: str</span>
+<span class="sd">            Bot email</span>
+<span class="sd">        password: str</span>
+<span class="sd">            Bot password</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">Endpoints</span><span class="o">.</span><span class="n">auth_dubtrack</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span> <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">password</span><span class="p">})</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">user_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Endpoints</span><span class="o">.</span><span class="n">auth_session</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">AuthenticatedUser</span><span class="o">.</span><span class="n">from_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_raw</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logged_in</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recent_conversations</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_conversations</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Client.connect"><a class="viewcode-back" href="../../../api.html#backtracked.Client.connect">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Connect to the Dubtrack websocket. You must call login first.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Endpoints</span><span class="o">.</span><span class="n">auth_token</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">resp</span><span class="p">[</span><span class="s2">&quot;token&quot;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Client.run"><a class="viewcode-back" href="../../../api.html#backtracked.Client.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Log in to Dubtrack and connect to the websocket. This call is blocking, and abstracts away event loop</span>
+<span class="sd">        creation. If you need more control over the event loop, use login and connect.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        email: str</span>
+<span class="sd">            Bot email</span>
+<span class="sd">        password: str</span>
+<span class="sd">            Bot password</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">())</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">pending</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Task</span><span class="o">.</span><span class="n">all_tasks</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+            <span class="n">gathered</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">pending</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">gathered</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">gathered</span><span class="p">)</span>
+                <span class="n">gathered</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logged_in</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># API #</span>
+
+<div class="viewcode-block" id="Client.join_room"><a class="viewcode-back" href="../../../api.html#backtracked.Client.join_room">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">join_room</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">room_slug</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Room</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Join a Dubtrack room via its URL slug.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        room_slug: str</span>
+<span class="sd">            the room&#39;s slug</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        :class:`Room`</span>
+<span class="sd">            Room object of the joined room </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">room_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Endpoints</span><span class="o">.</span><span class="n">room_join</span><span class="p">(</span><span class="n">slug</span><span class="o">=</span><span class="n">room_slug</span><span class="p">))</span>
+        <span class="n">room</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">room_raw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rooms</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">room</span><span class="p">)</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">member_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">Endpoints</span><span class="o">.</span><span class="n">room_users</span><span class="p">(</span><span class="n">rid</span><span class="o">=</span><span class="n">room</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+        <span class="n">room</span><span class="o">.</span><span class="n">members</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Member</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">member_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="p">{})))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_backfill_room</span><span class="p">(</span><span class="n">room</span><span class="p">))</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="n">Actions</span><span class="o">.</span><span class="n">join_room</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">room</span><span class="o">.</span><span class="n">room_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">room</span></div>
+
+<div class="viewcode-block" id="Client.fetch_conversations"><a class="viewcode-back" href="../../../api.html#backtracked.Client.fetch_conversations">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">fetch_conversations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fetch currently open conversations from Dubtrack.</span>
+<span class="sd">        </span>
+<span class="sd">        This method is called automatically if the parameter `recent_conversations` is True</span>
+<span class="sd">        when initializing this :class:`Client`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">conversations</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Endpoints</span><span class="o">.</span><span class="n">conversations</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">conv_data</span> <span class="ow">in</span> <span class="n">conversations</span><span class="p">:</span>
+            <span class="n">conv</span> <span class="o">=</span> <span class="n">Conversation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conv_data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conversations</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">conv</span><span class="p">)</span></div>
+
+    <span class="c1"># INTERNAL HANDLING #</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_backfill_room</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">room</span><span class="p">:</span> <span class="n">Room</span><span class="p">):</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">user_list</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Endpoints</span><span class="o">.</span><span class="n">room_users</span><span class="p">(</span><span class="n">rid</span><span class="o">=</span><span class="n">room</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">member_data</span> <span class="ow">in</span> <span class="n">user_list</span><span class="p">:</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">member_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;_user&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+            <span class="n">member</span> <span class="o">=</span> <span class="n">Member</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">member_data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+            <span class="n">room</span><span class="o">.</span><span class="n">members</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">member</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_handle_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">DubtrackMessage</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;WS Recv: </span><span class="si">{0.action.name}</span><span class="s2"> - </span><span class="si">{0.data}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="n">Actions</span><span class="o">.</span><span class="n">connected</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connection_id</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">connectionId</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span><span class="p">(</span><span class="n">Events</span><span class="o">.</span><span class="n">on_ready</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">payload</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="n">Actions</span><span class="o">.</span><span class="n">joined_room</span><span class="p">:</span>
+            <span class="n">room</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rooms</span><span class="o">.</span><span class="n">from_room_id</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">room</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span><span class="p">(</span><span class="n">Events</span><span class="o">.</span><span class="n">on_joined_room</span><span class="p">,</span> <span class="n">room</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">payload</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="n">Actions</span><span class="o">.</span><span class="n">presence_change</span><span class="p">:</span>
+            <span class="n">room</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rooms</span><span class="o">.</span><span class="n">from_room_id</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">presence</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;clientId&quot;</span><span class="p">))</span>
+            <span class="c1"># TODO: Still not sure if we should cache members...</span>
+
+            <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span><span class="p">(</span><span class="n">Events</span><span class="o">.</span><span class="n">on_member_presence</span><span class="p">,</span> <span class="n">room</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">payload</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="n">Actions</span><span class="o">.</span><span class="n">room_action</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">RoomActionMessage</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;room:&#39;</span><span class="p">):</span>
+                <span class="n">room</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rooms</span><span class="o">.</span><span class="n">from_room_id</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_room_action</span><span class="p">(</span><span class="n">room</span><span class="o">=</span><span class="n">room</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">payload</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;user:&#39;</span><span class="p">):</span>
+                <span class="n">user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">from_channel</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_user_action</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_handle_room_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">room</span><span class="p">:</span> <span class="n">Room</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">RoomActionMessage</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">RoomActions</span><span class="o">.</span><span class="n">chat_message</span><span class="p">:</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span><span class="p">(</span><span class="n">Events</span><span class="o">.</span><span class="n">on_chat</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">RoomActions</span><span class="o">.</span><span class="n">chat_skip</span><span class="p">:</span>
+            <span class="k">pass</span>  <span class="c1"># TODO: Handle this once we cache the playlist?</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">RoomActions</span><span class="o">.</span><span class="n">chat_delete</span><span class="p">:</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">chatid</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">message</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">message</span><span class="o">.</span><span class="n">deleted</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span><span class="p">(</span><span class="n">Events</span><span class="o">.</span><span class="n">on_chat_delete</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">RoomActions</span><span class="o">.</span><span class="n">room_playlist_dub</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">RoomActions</span><span class="o">.</span><span class="n">room_playlist_update</span><span class="p">:</span>
+            <span class="n">song_info</span> <span class="o">=</span> <span class="n">SongInfo</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">songInfo</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">song_cache</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">song_info</span><span class="p">)</span>
+            <span class="n">song</span> <span class="o">=</span> <span class="n">Song</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">song</span><span class="p">)</span>
+            <span class="n">room</span><span class="o">.</span><span class="n">playlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">song</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span><span class="p">(</span><span class="n">Events</span><span class="o">.</span><span class="n">on_playlist_song_add</span><span class="p">,</span> <span class="n">song</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">RoomActions</span><span class="o">.</span><span class="n">user_join</span><span class="p">:</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+            <span class="n">member</span> <span class="o">=</span> <span class="n">Member</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">roomUser</span><span class="p">)</span>
+            <span class="n">room</span><span class="o">.</span><span class="n">members</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">member</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span><span class="p">(</span><span class="n">Events</span><span class="o">.</span><span class="n">on_member_join</span><span class="p">,</span> <span class="n">member</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">RoomActions</span><span class="o">.</span><span class="n">user_update</span><span class="p">:</span>
+            <span class="n">member</span> <span class="o">=</span> <span class="n">Member</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+            <span class="n">room</span><span class="o">.</span><span class="n">members</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">member</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span><span class="p">(</span><span class="n">Events</span><span class="o">.</span><span class="n">on_member_update</span><span class="p">,</span> <span class="n">member</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_handle_user_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">RoomActionMessage</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">RoomActions</span><span class="o">.</span><span class="n">new_message</span><span class="p">:</span>
+            <span class="n">sender_id</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">userid</span>
+
+            <span class="k">if</span> <span class="n">sender_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="n">sender</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sender_id</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dispatch</span><span class="p">(</span><span class="n">Events</span><span class="o">.</span><span class="n">on_private_message</span><span class="p">,</span> <span class="n">sender</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, offbeatwitch.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

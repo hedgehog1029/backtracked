@@ -1,0 +1,185 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>backtracked.utils &#8212; backtracked 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for backtracked.utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;song_length&quot;</span><span class="p">,</span> <span class="s2">&quot;dt&quot;</span><span class="p">,</span> <span class="s2">&quot;ts&quot;</span><span class="p">,</span> <span class="s2">&quot;tzdt&quot;</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">attrs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">attrs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="o">!=</span> <span class="n">value</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="get"><a class="viewcode-back" href="../../api.html#backtracked.utils.get">[docs]</a><span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Finds the first object in an iterable that has all attributes present and equal to their value</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    iterable: :class:`Iterable`</span>
+<span class="sd">        Iterable of objects to check</span>
+<span class="sd">    attrs: kwargs</span>
+<span class="sd">        Key-value pairs of attributes to check against</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    object:</span>
+<span class="sd">        First element in the iterable that has all the required attributes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">iterable</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">valid</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">attrs</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">item</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="song_length"><a class="viewcode-back" href="../../api.html#backtracked.utils.song_length">[docs]</a><span class="k">def</span> <span class="nf">song_length</span><span class="p">(</span><span class="n">length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;%M:%S&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a song length in milliseconds to a human-readable format, e.g. `03:54`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    length: int</span>
+<span class="sd">        Length in milliseconds to convert</span>
+<span class="sd">    format: str</span>
+<span class="sd">        Optional custom format, to change the output. Passed to :meth:`datetime.datetime.strftime`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str:</span>
+<span class="sd">        String representing the length of time according to the format string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">dt</span><span class="p">(</span><span class="n">length</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="dt"><a class="viewcode-back" href="../../api.html#backtracked.utils.dt">[docs]</a><span class="k">def</span> <span class="nf">dt</span><span class="p">(</span><span class="n">msts</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts a JavaScript-style timestamp (milliseconds) to a Python datetime.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    msts: int</span>
+<span class="sd">        Timestamp to convert</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`datetime.datetime`</span>
+<span class="sd">        Python datetime representing the passed date</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">msts</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ts"><a class="viewcode-back" href="../../api.html#backtracked.utils.ts">[docs]</a><span class="k">def</span> <span class="nf">ts</span><span class="p">(</span><span class="n">time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts a Python datetime to a JavaScript-style timestamp (milliseconds). Not 100% accurate.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    time: :class:`datetime.datetime`</span>
+<span class="sd">        Datetime to convert.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float:</span>
+<span class="sd">        Number of milliseconds elapsed since 1970.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span> <span class="o">*</span> <span class="mi">1000</span></div>
+
+<div class="viewcode-block" id="tzdt"><a class="viewcode-back" href="../../api.html#backtracked.utils.tzdt">[docs]</a><span class="k">def</span> <span class="nf">tzdt</span><span class="p">(</span><span class="n">fulldate</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts an ISO 8601 full timestamp to a Python datetime.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fulldate: str</span>
+<span class="sd">        ISO 8601 UTC timestamp, e.g. `2017-06-02T16:23:14.815Z`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`datetime.datetime`</span>
+<span class="sd">        Python datetime representing ISO timestamp.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">fulldate</span><span class="p">,</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%S.</span><span class="si">%f</span><span class="s2">%z&quot;</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, offbeatwitch.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
