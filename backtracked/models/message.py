@@ -59,7 +59,7 @@ class Message(Model):
     def room(self) -> Room:
         """
         Get the room this message was sent in.
-        If this 
+        If this message was sent in a private conversation, this will be None.
         
         Returns
         -------
