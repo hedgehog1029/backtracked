@@ -247,16 +247,16 @@ class Client:
             song = Song(self, msg.value.playlist)
             user = User(self, msg.value.user)
             self.users.add(user)
+            dubtype = msg.value.dubtype
 
-            self._dispatch(Events.on_dub, song)
+            self._dispatch(Events.on_dub, song, user, dubtype)
         elif msg.name == RoomActions.room_playlist_update:
             song_info = SongInfo(msg.value.songInfo)
             self.song_cache.add(song_info)
             song = Song(self, msg.value.song)
-            dubtype = msg.value.dubtype
             room.playlist.append(song)
 
-            self._dispatch(Events.on_playlist_song_add, song, dubtype)
+            self._dispatch(Events.on_playlist_song_add, song)
         elif msg.name == RoomActions.user_join:
             user = User(self, msg.value.user)
             self.users.add(user)

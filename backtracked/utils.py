@@ -98,4 +98,7 @@ def tzdt(fulldate: str):
     :class:`datetime.datetime`
         Python datetime representing ISO timestamp.
     """
+    if fulldate[-1] == "Z":
+        fulldate = fulldate[0:-1] + "+0000"
+
     return datetime.strptime(fulldate, "%Y-%m-%dT%H:%M:%S.%f%z")
