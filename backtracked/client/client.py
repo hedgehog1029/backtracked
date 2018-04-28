@@ -253,9 +253,10 @@ class Client:
             song_info = SongInfo(msg.value.songInfo)
             self.song_cache.add(song_info)
             song = Song(self, msg.value.song)
+            dubtype = msg.value.dubtype
             room.playlist.append(song)
 
-            self._dispatch(Events.on_playlist_song_add, song)
+            self._dispatch(Events.on_playlist_song_add, song, dubtype)
         elif msg.name == RoomActions.user_join:
             user = User(self, msg.value.user)
             self.users.add(user)
