@@ -87,6 +87,7 @@ class Events:
     on_member_presence = "on_member_presence"
     on_member_update = "on_member_update"
     on_playlist_song_add = "on_playlist_song_add"
+    on_dub = "on_dub"
     on_private_message = "on_private_message"
 
     # aliases

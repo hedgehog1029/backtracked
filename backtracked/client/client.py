@@ -244,7 +244,11 @@ class Client:
                 message.deleted = True
                 self._dispatch(Events.on_chat_delete, message)
         elif msg.name == RoomActions.room_playlist_dub:
-            pass
+            song = Song(self, msg.value.playlist)
+            user = User(self, msg.value.user)
+            self.users.add(user)
+
+            self._dispatch(Events.on_dub, song)
         elif msg.name == RoomActions.room_playlist_update:
             song_info = SongInfo(msg.value.songInfo)
             self.song_cache.add(song_info)
