@@ -49,6 +49,12 @@ Message
 .. autoclass:: Message
    :members:
 
+Conversation
+^^^^^^^^^^^^
+
+.. autoclass:: Conversation
+   :members:
+
 Song
 ^^^^
 

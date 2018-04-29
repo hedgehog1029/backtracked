@@ -22,6 +22,7 @@ Contents
    :maxdepth: 3
 
    api
+   events
 
 Links
 =====

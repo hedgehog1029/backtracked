@@ -23,6 +23,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Event Reference" href="events.html" />
     <link rel="prev" title="backtracked" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -55,7 +56,7 @@ It provides methods for handling events and non-room-specific functions.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>connector</strong> (<a class="reference external" href="http://aiohttp.readthedocs.io/en/stable/client_reference.html#aiohttp.BaseConnector" title="(in aiohttp v2.3)"><code class="xref py py-class docutils literal"><span class="pre">aiohttp.BaseConnector</span></code></a>) – A custom <a class="reference external" href="http://aiohttp.readthedocs.io/en/stable/index.html">aiohttp</a> connector may be passed if desired. This is to allow proxying.</li>
+<li><strong>connector</strong> (<a class="reference external" href="http://aiohttp.readthedocs.io/en/stable/client_reference.html#aiohttp.BaseConnector" title="(in aiohttp v3.1)"><code class="xref py py-class docutils literal"><span class="pre">aiohttp.BaseConnector</span></code></a>) – A custom <a class="reference external" href="http://aiohttp.readthedocs.io/en/stable/index.html">aiohttp</a> connector may be passed if desired. This is to allow proxying.</li>
 <li><strong>proxy_options</strong> (<a class="reference internal" href="#backtracked.ProxyOptions" title="backtracked.ProxyOptions"><code class="xref py py-class docutils literal"><span class="pre">ProxyOptions</span></code></a>) – Proxy options, if proxying is required.</li>
 <li><strong>recent_conversations</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – If True, calls <a class="reference internal" href="#backtracked.Client.fetch_conversations" title="backtracked.Client.fetch_conversations"><code class="xref py py-meth docutils literal"><span class="pre">Client.fetch_conversations()</span></code></a> after you have logged in. Defaults to True.</li>
 </ul>
@@ -332,7 +333,7 @@ yet been backfilled.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A conversation with this user as the recipient.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">Conversation</span></code></td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#backtracked.Conversation" title="backtracked.Conversation"><code class="xref py py-class docutils literal"><span class="pre">Conversation</span></code></a></td>
 </tr>
 </tbody>
 </table>
@@ -581,6 +582,103 @@ If this message was sent in a private conversation, this will be None.</p>
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Room this message was sent to.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#backtracked.Room" title="backtracked.Room"><code class="xref py py-class docutils literal"><span class="pre">Room</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="conversation">
+<h3>Conversation<a class="headerlink" href="#conversation" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="backtracked.Conversation">
+<em class="property">class </em><code class="descclassname">backtracked.</code><code class="descname">Conversation</code><span class="sig-paren">(</span><em>client</em>, <em>data: dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backtracked/models/message.html#Conversation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#backtracked.Conversation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a private conversation between two users.</p>
+<dl class="attribute">
+<dt id="backtracked.Conversation.id">
+<code class="descname">id</code><a class="headerlink" href="#backtracked.Conversation.id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – ID of this conversation.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="backtracked.Conversation.created_at">
+<code class="descname">created_at</code><a class="headerlink" href="#backtracked.Conversation.created_at" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">datetime.datetime</span></code></a> – Time this conversation was started.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="backtracked.Conversation.latest_message_str">
+<code class="descname">latest_message_str</code><a class="headerlink" href="#backtracked.Conversation.latest_message_str" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Text of the last message to be sent in this conversation. May not be up-to-date unless <a class="reference internal" href="#backtracked.Conversation.fetch" title="backtracked.Conversation.fetch"><code class="xref py py-meth docutils literal"><span class="pre">fetch()</span></code></a> is called.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="backtracked.Conversation.fetch">
+<em class="property">await </em><code class="descname">fetch</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; list<a class="reference internal" href="_modules/backtracked/models/message.html#Conversation.fetch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#backtracked.Conversation.fetch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch all messages for this conversation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">List of message IDs in this conversation.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)">str</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="backtracked.Conversation.has_read">
+<code class="descname">has_read</code><span class="sig-paren">(</span><em>user: backtracked.models.user.User</em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="_modules/backtracked/models/message.html#Conversation.has_read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#backtracked.Conversation.has_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the passed <a class="reference internal" href="#backtracked.User" title="backtracked.User"><code class="xref py py-class docutils literal"><span class="pre">User</span></code></a> has read this conversation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>user</strong> (<a class="reference internal" href="#backtracked.User" title="backtracked.User"><code class="xref py py-class docutils literal"><span class="pre">User</span></code></a>) – User to check</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if the user has read this conversation, False otherwise.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="backtracked.Conversation.mark_as_read">
+<em class="property">await </em><code class="descname">mark_as_read</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backtracked/models/message.html#Conversation.mark_as_read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#backtracked.Conversation.mark_as_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Marks this conversation as read by the current user.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="backtracked.Conversation.recipients">
+<code class="descname">recipients</code><a class="headerlink" href="#backtracked.Conversation.recipients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the recipients of this conversation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Recipients of this conversation.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list[<a class="reference internal" href="#backtracked.User" title="backtracked.User"><code class="xref py py-class docutils literal"><span class="pre">User</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="backtracked.Conversation.send_message">
+<em class="property">await </em><code class="descname">send_message</code><span class="sig-paren">(</span><em>text: str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backtracked/models/message.html#Conversation.send_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#backtracked.Conversation.send_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a message to this conversation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>text</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Text to send in the message.</td>
 </tr>
 </tbody>
 </table>
@@ -1006,6 +1104,7 @@ from various sources.</p>
 <li><a class="reference internal" href="#member">Member</a></li>
 <li><a class="reference internal" href="#authenticateduser">AuthenticatedUser</a></li>
 <li><a class="reference internal" href="#message">Message</a></li>
+<li><a class="reference internal" href="#conversation">Conversation</a></li>
 <li><a class="reference internal" href="#song">Song</a></li>
 <li><a class="reference internal" href="#songinfo">SongInfo</a></li>
 </ul>
@@ -1028,6 +1127,7 @@ from various sources.</p>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
       <li>Previous: <a href="index.html" title="previous chapter">backtracked</a></li>
+      <li>Next: <a href="events.html" title="next chapter">Event Reference</a></li>
   </ul></li>
 </ul>
 </div>

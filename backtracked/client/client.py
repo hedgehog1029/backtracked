@@ -108,6 +108,9 @@ class Client:
         """
         Connect to the Dubtrack websocket. You must call login first.
         """
+        if not self.logged_in:
+            raise RuntimeError("You must log in before connecting to the websocket!")
+
         _, resp = await self.http.get(Endpoints.auth_token)
         await self.socket.connect(resp["token"])
 
@@ -278,5 +281,6 @@ class Client:
                 return
 
             sender = self.users.get(sender_id)
-
-            self._dispatch(Events.on_private_message, sender)
+            conv = self.conversations.get(msg.value.messageid)
+            # TODO: Retieve the message somehow. Why do we only get the conversation ID?!?
+            self._dispatch(Events.on_private_message, conv)

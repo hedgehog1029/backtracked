@@ -50,6 +50,7 @@
  | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#J"><strong>J</strong></a>
  | <a href="#L"><strong>L</strong></a>
@@ -113,13 +114,17 @@
 </li>
       <li><a href="api.html#backtracked.Client.connect">connect() (backtracked.Client method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#backtracked.Message.content">content (backtracked.Message attribute)</a>
 </li>
-      <li><a href="api.html#backtracked.Message.created_at">created_at (backtracked.Message attribute)</a>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#backtracked.Conversation">Conversation (class in backtracked)</a>
+</li>
+      <li><a href="api.html#backtracked.Conversation.created_at">created_at (backtracked.Conversation attribute)</a>
 
       <ul>
+        <li><a href="api.html#backtracked.Message.created_at">(backtracked.Message attribute)</a>
+</li>
         <li><a href="api.html#backtracked.Song.created_at">(backtracked.Song attribute)</a>
 </li>
         <li><a href="api.html#backtracked.SongInfo.created_at">(backtracked.SongInfo attribute)</a>
@@ -165,6 +170,10 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#backtracked.Conversation.fetch">fetch() (backtracked.Conversation method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#backtracked.Client.fetch_conversations">fetch_conversations() (backtracked.Client method)</a>
 </li>
   </ul></td>
@@ -178,12 +187,22 @@
   </ul></td>
 </tr></table>
 
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#backtracked.Conversation.has_read">has_read() (backtracked.Conversation method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#backtracked.Member.id">id (backtracked.Member attribute)</a>
+      <li><a href="api.html#backtracked.Conversation.id">id (backtracked.Conversation attribute)</a>
 
       <ul>
+        <li><a href="api.html#backtracked.Member.id">(backtracked.Member attribute)</a>
+</li>
         <li><a href="api.html#backtracked.Message.id">(backtracked.Message attribute)</a>
 </li>
         <li><a href="api.html#backtracked.Room.id">(backtracked.Room attribute)</a>
@@ -215,6 +234,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#backtracked.Room.lang">lang (backtracked.Room attribute)</a>
 </li>
+      <li><a href="api.html#backtracked.Conversation.latest_message_str">latest_message_str (backtracked.Conversation attribute)</a>
+</li>
       <li><a href="api.html#backtracked.Song.length">length (backtracked.Song attribute)</a>
 
       <ul>
@@ -234,6 +255,8 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#backtracked.Role.manager">manager (backtracked.Role attribute)</a>
+</li>
+      <li><a href="api.html#backtracked.Conversation.mark_as_read">mark_as_read() (backtracked.Conversation method)</a>
 </li>
       <li><a href="api.html#backtracked.SongInfo.media_id">media_id (backtracked.SongInfo attribute)</a>
 </li>
@@ -275,10 +298,30 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#backtracked.User.open_conversation">open_conversation() (backtracked.User method)</a>
+      <li><a href="events.html#backtracked.on_chat">on_chat() (in module backtracked)</a>
+</li>
+      <li><a href="events.html#backtracked.on_chat_delete">on_chat_delete() (in module backtracked)</a>
+</li>
+      <li><a href="events.html#backtracked.on_dub">on_dub() (in module backtracked)</a>
+</li>
+      <li><a href="events.html#backtracked.on_joined_room">on_joined_room() (in module backtracked)</a>
+</li>
+      <li><a href="events.html#backtracked.on_member_join">on_member_join() (in module backtracked)</a>
+</li>
+      <li><a href="events.html#backtracked.on_member_presence">on_member_presence() (in module backtracked)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="events.html#backtracked.on_member_update">on_member_update() (in module backtracked)</a>
+</li>
+      <li><a href="events.html#backtracked.on_playlist_song_add">on_playlist_song_add() (in module backtracked)</a>
+</li>
+      <li><a href="events.html#backtracked.on_private_message">on_private_message() (in module backtracked)</a>
+</li>
+      <li><a href="events.html#backtracked.on_ready">on_ready() (in module backtracked)</a>
+</li>
+      <li><a href="api.html#backtracked.User.open_conversation">open_conversation() (backtracked.User method)</a>
+</li>
       <li><a href="api.html#backtracked.Member.order">order (backtracked.Member attribute)</a>
 
       <ul>
@@ -319,6 +362,8 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#backtracked.Conversation.recipients">recipients (backtracked.Conversation attribute)</a>
+</li>
       <li><a href="api.html#backtracked.Role.resident_dj">resident_dj (backtracked.Role attribute)</a>
 </li>
       <li><a href="api.html#backtracked.Member.role">role (backtracked.Member attribute)</a>
@@ -349,8 +394,12 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#backtracked.Room.send_message">send_message() (backtracked.Room method)</a>
+      <li><a href="api.html#backtracked.Conversation.send_message">send_message() (backtracked.Conversation method)</a>
+
+      <ul>
+        <li><a href="api.html#backtracked.Room.send_message">(backtracked.Room method)</a>
 </li>
+      </ul></li>
       <li><a href="api.html#backtracked.Member.set_role">set_role() (backtracked.Member method)</a>
 </li>
       <li><a href="api.html#backtracked.Member.skipped">skipped (backtracked.Member attribute)</a>
@@ -359,10 +408,10 @@
         <li><a href="api.html#backtracked.Song.skipped">(backtracked.Song attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api.html#backtracked.Room.slug">slug (backtracked.Room attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#backtracked.Room.slug">slug (backtracked.Room attribute)</a>
+</li>
       <li><a href="api.html#backtracked.Song">Song (class in backtracked)</a>
 </li>
       <li><a href="api.html#backtracked.Song.song_info">song_info (backtracked.Song attribute)</a>
