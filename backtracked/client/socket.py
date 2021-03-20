@@ -68,16 +68,18 @@ class SocketClient:
         elif packet.type == PacketType.CLOSE:
             log.warning("WebSocket closed.")
         elif packet.type == PacketType.PONG:
+            # Clear ping timeout, we got a pong
+            self._clear_ping_timeout()
+            # Wait ping interval before sending a ping again
             self._set_ping_interval()
         elif packet.type == PacketType.MESSAGE:
-            self._set_ping_timeout()
-
             msg = QueUpMessage(packet.to_dict())
             try:
                 self._client._handle_payload(msg)
             except BaseException as exc:
                 log.exception("There was an error processing a websocket payload:\n{0}".format(msg.action.name))
 
+    # Ping behaviour documentation: https://github.com/socketio/engine.io-protocol/tree/v3#timeouts
     def _set_ping_interval(self):
         if self.interval_timer is not None:
             self.interval_timer.cancel()
@@ -85,25 +87,27 @@ class SocketClient:
         async def interval():
             await asyncio.sleep(self.ping_interval)
             await self._ping()
-            self._set_ping_interval()
 
         self.interval_timer = self.loop.create_task(interval())
         self.interval_timer.add_done_callback(cleaner)
 
-    def _set_ping_timeout(self, ping_timeout=0):
+    def _clear_ping_timeout(self):
         if self.timeout_timer is not None:
             self.timeout_timer.cancel()
 
+    def _set_ping_timeout(self, ping_timeout=0):
+        self._clear_ping_timeout()
+
         async def timeout(timeout):
             await asyncio.sleep(timeout)
+            log.debug("Ping response timed out")
             await self.ws.close()
 
-        tout = ping_timeout if ping_timeout > 0 else self.ping_timeout+self.ping_interval
-        self.timeout_timer = self.loop.create_task(timeout(tout))
+        self.timeout_timer = self.loop.create_task(timeout(ping_timeout))
         self.timeout_timer.add_done_callback(cleaner)
 
     async def _ping(self):
-        await self.ws.send_bytes(Packet(PacketType.PING).encode())
+        await self.ws.send_str(Packet(PacketType.PING).encode_str())
         self._set_ping_timeout(self.ping_timeout)
 
     def send(self, **kwargs):

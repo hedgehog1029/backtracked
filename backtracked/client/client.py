@@ -143,7 +143,7 @@ class Client:
             self.loop.run_until_complete(self.connect())
         except KeyboardInterrupt:
             self.close()
-            pending = asyncio.Task.all_tasks(loop=self.loop)
+            pending = asyncio.all_tasks(loop=self.loop)
             gathered = asyncio.gather(*pending, loop=self.loop)
 
             try:
@@ -156,7 +156,7 @@ class Client:
             self.loop.close()
 
     def close(self):
-        self.http.session.close()
+        self.loop.run_until_complete(self.http.session.close())
         self.logged_in = False
 
     # API #
