@@ -2,7 +2,7 @@
 
 A python wrapper for the QueUp API.
 
-You can find docs [here](http://offbeatwit.ch/backtracked/build/index.html).
+You can find the docs [here](https://backtracked.readthedocs.io/).
 
 ### Example
 
