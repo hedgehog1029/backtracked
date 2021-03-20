@@ -20,7 +20,7 @@ class User(Model):
     created_at: :class:`datetime.datetime`
         Datetime representing the date when this user created their account.
     avatar_url: str
-        URL of this user's avatar.
+        URL of this user's avatar. May be None.
     """
     def __init__(self, client, data: dict):
         super().__init__(client)
@@ -30,7 +30,7 @@ class User(Model):
         self.status = data.get("status")
         self.dubs = data.get("dubs")
         self._roleid = data.get("roleid")
-        self.avatar_url = data.get("profileImage", {}).get("url")
+        self.avatar_url = (data.get("profileImage") or {}).get("url")
 
     # Some methods to be actually implemented in future
     async def open_conversation(self):

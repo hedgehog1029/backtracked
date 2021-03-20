@@ -94,14 +94,20 @@ class Client:
             Bot email
         password: str
             Bot password
+
+        Raises
+        ------
+        AuthorizationError
+            If the username or password is invalid.
         """
-        status, = await self.http.post(Endpoints.auth_dubtrack, data={"username": email, "password": password})
-        if status != 200:
-            return
+        try:
+            await self.http.post(Endpoints.auth_dubtrack, data={"username": email, "password": password})
+        except ApiError:
+            raise AuthorizationError("Failed to log in (invalid username or password)")
 
         _, user_raw = await self.http.get(Endpoints.auth_session)
-        self.user = AuthenticatedUser.from_data(self, user_raw)
 
+        self.user = AuthenticatedUser.from_data(self, user_raw)
         self.logged_in = True
 
         if self._recent_conversations:

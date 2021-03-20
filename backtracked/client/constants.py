@@ -12,7 +12,7 @@ def ws_url(token: str):
 base_url = "https://api.queup.net"
 
 class Endpoints:
-    auth_dubtrack = "/auth/dubtrack"
+    auth_dubtrack = "/auth/login"
     auth_session = "/auth/session"
     auth_token = "/auth/token"
     chat = fmt("/chat/{rid}")

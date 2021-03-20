@@ -2,6 +2,7 @@ import aiohttp
 import asyncio
 from .. import __version__
 from . import constants
+from ..models.errors import *
 
 import logging
 
@@ -67,9 +68,11 @@ class HTTPClient:
 
         if r.status == 200:
             j = await r.json()
-            return r.status, j["data"]
+            # TODO: why did I return status here. bad ideas
+            return 200, j["data"]
         else:
-            return r.status, await r.text()
+            # TODO: ok so the error handling needs improvement
+            raise ApiError(path, r.status, "Server returned error")
 
     def get(self, path: str, **kwargs):
         return self.request("GET", path, **kwargs)
