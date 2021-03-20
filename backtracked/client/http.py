@@ -71,8 +71,11 @@ class HTTPClient:
             # TODO: why did I return status here. bad ideas
             return 200, j["data"]
         else:
-            # TODO: ok so the error handling needs improvement
-            raise ApiError(path, r.status, await r.text())
+            if r.content_type == "application/json":
+                data = await r.json()
+                raise ApiError(path, r.status, data.get("message"))
+            else:
+                raise ApiError(path, r.status, await r.text())
 
     def get(self, path: str, **kwargs):
         return self.request("GET", path, **kwargs)
