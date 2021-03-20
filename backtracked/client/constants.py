@@ -149,16 +149,14 @@ class Role(Enum):
                           "queue-order", "kick", "ban", "mute", "set-dj", "lock-queue", "delete-chat", "chat-mention",
                           "set-roles", "update-room", "set-managers"])
 
-    @classmethod
-    def _role_map(cls):
-        return {
-            "5615feb8e596154fc2000002": cls.resident_dj,
-            "5615fe1ee596154fc2000001": cls.vip,
-            "52d1ce33c38a06510c000001": cls.moderator,
-            "5615fd84e596150061000003": cls.manager,
-            "5615fa9ae596154a5c000000": cls.co_owner
-        }
+    _role_map = {
+        "5615feb8e596154fc2000002": resident_dj,
+        "5615fe1ee596154fc2000001": vip,
+        "52d1ce33c38a06510c000001": moderator,
+        "5615fd84e596150061000003": manager,
+        "5615fa9ae596154a5c000000": co_owner
+    }
 
     @classmethod
     def from_id(cls, role_id: str):
-        return cls._role_map().get(role_id)
+        return cls._role_map.get(role_id)
