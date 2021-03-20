@@ -7,6 +7,8 @@ from .engine.packets import Packet, PacketType
 import json
 import logging
 
+log = logging.getLogger("backtracked.socket")
+
 def cleaner(future: asyncio.Future):
     try:
         future.exception()
@@ -15,7 +17,6 @@ def cleaner(future: asyncio.Future):
 
 class SocketClient:
     def __init__(self, client):
-        self.log = logging.getLogger("backtracked.socket")
         self._client = client
         self.loop = client.http.loop
         self.session = client.http.session
@@ -33,56 +34,56 @@ class SocketClient:
         if self._client.http.proxy_options.proxy is not None:
             opts["proxy"] = self._client.http.proxy_options.proxy
 
-        self.log.debug("WebSocket attempting to connect...")
+        log.debug("WebSocket attempting to connect...")
         self.ws = await self.session.ws_connect(constants.ws_url(token), **opts)
-        self.log.debug("WebSocket connected.")
+        log.debug("WebSocket connected.")
 
         async for msg in self.ws:
             if msg.type == aiohttp.WSMsgType.TEXT or msg.type == aiohttp.WSMsgType.BINARY:
                 packet = Packet.decode(msg.data)
                 await self._handle(packet)
             else:
-                self.log.debug(msg.type)
-                self.log.debug(msg.data)
+                log.debug(msg.type)
+                log.debug(msg.data)
 
         # TODO: Reconnect, I guess
-        self.log.warning("Websocket was closed: {0}".format(self.ws.exception()))
+        log.warning("Websocket was closed: {0}".format(self.ws.exception()))
 
     async def _handle(self, packet: Packet):
-        # self.log.debug("Raw recv: [{0.type.name}] {0.data}".format(packet))
+        # log.debug("Raw recv: [{0.type.name}] {0.data}".format(packet))
 
         if packet.type == PacketType.OPEN:
             j = packet.to_dict()
             self.ping_interval = int(j["pingInterval"] / 1000)
             self.ping_timeout = int(j["pingTimeout"] / 1000)
 
-            self._setPingInterval()
+            self._set_ping_interval()
         elif packet.type == PacketType.CLOSE:
-            self.log.warning("WebSocket closed.")
+            log.warning("WebSocket closed.")
         elif packet.type == PacketType.PONG:
-            self._setPingInterval()
+            self._set_ping_interval()
         elif packet.type == PacketType.MESSAGE:
-            self._setPingTimeout()
+            self._set_ping_timeout()
 
-            msg = DubtrackMessage(packet.to_dict())
+            msg = QueUpMessage(packet.to_dict())
             try:
                 self._client._handle_payload(msg)
             except BaseException as exc:
-                self.log.exception("There was an error processing a websocket payload:\n{0}".format(msg.action.name))
+                log.exception("There was an error processing a websocket payload:\n{0}".format(msg.action.name))
 
-    def _setPingInterval(self):
+    def _set_ping_interval(self):
         if self.interval_timer is not None:
             self.interval_timer.cancel()
 
         async def interval():
             await asyncio.sleep(self.ping_interval)
             await self._ping()
-            self._setPingInterval()
+            self._set_ping_interval()
 
         self.interval_timer = self.loop.create_task(interval())
         self.interval_timer.add_done_callback(cleaner)
 
-    def _setPingTimeout(self, ping_timeout=0):
+    def _set_ping_timeout(self, ping_timeout=0):
         if self.timeout_timer is not None:
             self.timeout_timer.cancel()
 
@@ -96,7 +97,7 @@ class SocketClient:
 
     async def _ping(self):
         await self.ws.send_bytes(Packet(PacketType.PING).encode())
-        self._setPingTimeout(self.ping_timeout)
+        self._set_ping_timeout(self.ping_timeout)
 
     def send(self, **kwargs):
         kwargs["action"] = kwargs.get("action", constants.Actions.heartbeat).value
@@ -105,7 +106,7 @@ class SocketClient:
     async def _send(self, payload: dict):
         packet = Packet(PacketType.MESSAGE, data_json=payload)
         await self.ws.send_str(packet.encode_str())
-        self.log.debug("WS Send: {0.type.name} - {0.data}".format(packet))
+        log.debug("WS Send: {0.type.name} - {0.data}".format(packet))
 
 class AttributeProxy:
     def __init__(self, data: dict):
@@ -117,7 +118,7 @@ class AttributeProxy:
     def __getitem__(self, item):
         return self.data.get(item, None)
 
-class DubtrackMessage(AttributeProxy):
+class QueUpMessage(AttributeProxy):
     def __init__(self, payload: dict):
         super().__init__(payload)
         self.action = constants.Actions(payload.get("action"))

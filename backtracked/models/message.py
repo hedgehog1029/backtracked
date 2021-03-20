@@ -11,7 +11,7 @@ def everything_except(iterable, exception):
 
 class Message(Model):
     """
-    Represents a sent message on Dubtrack.
+    Represents a sent message on QueUp.
     
     Attributes
     ----------

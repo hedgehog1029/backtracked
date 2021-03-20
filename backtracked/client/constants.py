@@ -6,10 +6,10 @@ def fmt(input: str):
     return format
 
 def ws_url(token: str):
-    return "wss://ws.dubtrack.fm/ws/?connect=1&access_token={token}&EIO=3&transport=websocket"\
+    return "wss://ws.queup.net/ws/?connect=1&access_token={token}&EIO=3&transport=websocket"\
             .format(token=token)
 
-base_url = "https://api.dubtrack.fm"
+base_url = "https://api.queup.net"
 
 class Endpoints:
     auth_dubtrack = "/auth/dubtrack"

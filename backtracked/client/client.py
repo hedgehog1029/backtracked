@@ -1,13 +1,13 @@
 from .http import HTTPClient
 from .constants import Endpoints, Actions, Events, RoomActions
-from .socket import SocketClient, DubtrackMessage, RoomActionMessage
+from .socket import SocketClient, QueUpMessage, RoomActionMessage
 from ..models import *
 import asyncio
 import logging
 
 class Client:
     """
-    The client class is the main class you should be using to communicate with the Dubtrack API.
+    The client class is the main class you should be using to communicate with the QueUp API.
     It provides methods for handling events and non-room-specific functions.
     
     All parameters are optional.
@@ -86,7 +86,7 @@ class Client:
 
     async def login(self, email: str, password: str):
         """
-        Log in to Dubtrack. This does not connect to the websocket.
+        Log in to QueUp. This does not connect to the websocket.
         
         Parameters
         ----------
@@ -95,7 +95,10 @@ class Client:
         password: str
             Bot password
         """
-        await self.http.post(Endpoints.auth_dubtrack, data={"username": email, "password": password})
+        status, = await self.http.post(Endpoints.auth_dubtrack, data={"username": email, "password": password})
+        if status != 200:
+            return
+
         _, user_raw = await self.http.get(Endpoints.auth_session)
         self.user = AuthenticatedUser.from_data(self, user_raw)
 
@@ -106,7 +109,7 @@ class Client:
 
     async def connect(self):
         """
-        Connect to the Dubtrack websocket. You must call login first.
+        Connect to the QueUp websocket. You must call login first.
         """
         if not self.logged_in:
             raise RuntimeError("You must log in before connecting to the websocket!")
@@ -116,7 +119,7 @@ class Client:
 
     def run(self, email, password):
         """
-        Log in to Dubtrack and connect to the websocket. This call is blocking, and abstracts away event loop
+        Log in to QueUp and connect to the websocket. This call is blocking, and abstracts away event loop
         creation. If you need more control over the event loop, use login and connect.
         
         Parameters
@@ -151,7 +154,7 @@ class Client:
 
     async def join_room(self, room_slug: str) -> Room:
         """
-        Join a Dubtrack room via its URL slug.
+        Join a QueUp room via its URL slug.
         
         Parameters
         ----------
@@ -177,7 +180,7 @@ class Client:
 
     async def fetch_conversations(self):
         """
-        Fetch currently open conversations from Dubtrack.
+        Fetch currently open conversations from QueUp.
         
         This method is called automatically if the parameter `recent_conversations` is True
         when initializing this :class:`Client`.
@@ -199,7 +202,7 @@ class Client:
             self.users.add(user)
             room.members.add(member)
 
-    def _handle_payload(self, payload: DubtrackMessage):
+    def _handle_payload(self, payload: QueUpMessage):
         self._log.debug("WS Recv: {0.action.name} - {0.data}".format(payload))
 
         if payload.action == Actions.connected:

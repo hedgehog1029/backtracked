@@ -7,12 +7,11 @@ backtracked
 ===========
 
 Welcome to backtracked's documentation! Backtracked is a modern, object-oriented, pythonic API wrapper for the
-Dubtrack API.
+QueUp API.
 
 Features:
-   * Full support for the Dubtrack API
+   * Good support for the QueUp API
    * Supports sending and receiving direct messages
-   * Sane HTTP handling that obeys rate limits
    * Object-oriented python API
 
 Contents

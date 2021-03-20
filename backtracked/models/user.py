@@ -9,7 +9,7 @@ logger = logging.getLogger("backtracked.models.user")
 
 class User(Model):
     """
-    Represents a specific user on Dubtrack.
+    Represents a specific user on QueUp.
 
     Attributes
     ----------
@@ -108,8 +108,8 @@ class AuthenticatedUser(User):
 
 class Member(Model):
     """
-    Represents a Dubtrack user's data from a specific :class:`Room`.
-    This does not subclass :class:`User`, as Dubtrack itself does not count them as the same entity.
+    Represents a QueUp user's data from a specific :class:`Room`.
+    This does not subclass :class:`User`, as QueUp itself does not count them as the same entity.
     Instead, the `user` getter should be used for retrieving the associated user.
 
     Attributes

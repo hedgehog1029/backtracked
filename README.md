@@ -1,7 +1,6 @@
 # backtracked
 
-A python wrapper for the Dubtrack API.
-Currently in alpha.
+A python wrapper for the QueUp API.
 
 You can find docs [here](http://offbeatwit.ch/backtracked/build/index.html).
 

@@ -5,7 +5,7 @@ __all__ = ["Song", "SongInfo"]
 
 class Song(Model):
     """
-    Represents a song on Dubtrack that will play, is playing, or has played in the past.
+    Represents a song on QueUp that will play, is playing, or has played in the past.
 
     Attributes
     ----------
@@ -103,7 +103,7 @@ class SongInfo:
     Attributes
     ----------
     id: str
-        Dubtrack ID of this media object.
+        QueUp ID of this media object.
     name: str
         Source-provided name of this media object.
     media_id: str

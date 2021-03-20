@@ -8,7 +8,7 @@ __all__ = ["Room", "RoomCollection"]
 
 class Room(Model):
     """
-    Represents a room on Dubtrack that may or may not be currently joined.
+    Represents a room on QueUp that may or may not be currently joined.
 
     Attributes
     ----------
