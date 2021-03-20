@@ -72,7 +72,7 @@ class HTTPClient:
             return 200, j["data"]
         else:
             # TODO: ok so the error handling needs improvement
-            raise ApiError(path, r.status, "Server returned error")
+            raise ApiError(path, r.status, await r.text())
 
     def get(self, path: str, **kwargs):
         return self.request("GET", path, **kwargs)

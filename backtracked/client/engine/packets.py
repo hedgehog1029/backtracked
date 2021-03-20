@@ -1,5 +1,4 @@
 from enum import Enum
-import six
 import json
 import base64
 
@@ -55,11 +54,11 @@ class Packet:
     @classmethod
     def decode(cls, packet: str):
         packet = bytes(packet, encoding=cls.default_encoding)
-        packet_type = six.byte2int(packet[:1])
+        packet_type = packet[0]
 
         if packet_type == 98:  # b64 flag
             part = packet[1:]
-            dec_type = PacketType(six.byte2int(part[:1]))
+            dec_type = PacketType(part[0])
             decoded = base64.b64decode(part[1:])
 
             return cls(dec_type, decoded)

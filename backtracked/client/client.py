@@ -75,12 +75,15 @@ class Client:
         if ev_name not in self.event_handlers:
             return
 
+        def done(fut: asyncio.Future):
+            exc = fut.exception()
+            if exc is not None:
+                self._log.error("Error executing event handler {name}: {err}"
+                                .format(name=callback.__name__, err=exc.with_traceback(exc.__traceback__)))
+
         for callback in self.event_handlers[ev_name]:
-            try:
-                self.loop.create_task(callback(*payload))
-            except BaseException as err:
-                self._log.error("Error executing callback {name}: {err}"
-                                .format(name=callback.__name__, err=err.with_traceback(err.__traceback__)))
+            task = self.loop.create_task(callback(*payload))
+            task.add_done_callback(done)
 
     # LOGIN + CONNECT #
 

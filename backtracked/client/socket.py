@@ -27,8 +27,15 @@ class SocketClient:
         self.ping_timeout = 0
         self.interval_timer = None
         self.timeout_timer = None
+        self.should_reconnect = True
 
     async def connect(self, token: str):
+        """Connect to the websocket until closed."""
+
+        while self.should_reconnect:
+            await self._connect(token)
+
+    async def _connect(self, token: str):
         opts = {}
 
         if self._client.http.proxy_options.proxy is not None:
