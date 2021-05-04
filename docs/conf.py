@@ -15,7 +15,7 @@
 
 import os
 import sys
-backtracked_version = '0.1.0'
+backtracked_version = '0.1.1'
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
